@@ -4,19 +4,23 @@ import React from "react";
 import GoogleIcon from "../svg/GoogleIcon";
 import TwitterIcon from "../svg/TwitterIcon";
 import JoinIcon from "../svg/JoinIcon";
-import { log } from "console";
+import { useRouter } from "next/navigation";
 
 const GetStarted = () => {
+  const router = useRouter();
+
   const handleAuthGoogle = () => {
     console.log("Google authentication initiated");
 
     // Handle Google authentication logic here
+    router.push("/client-handler");
   };
 
   const handleAuthTwitter = () => {
     console.log("Twitter authentication initiated");
 
     // Handle Twitter authentication logic here
+    router.push("/client-handler");
   };
 
   return (
