@@ -10,22 +10,22 @@ const NavBar = () => {
           tabIndex={0}
           className="select-none cursor-pointer outline-0"
         >
-          <h1 className="text-[24px] pl-2">
+          <Link href="/" className="text-[24px] pl-2">
             Veil{" "}
             {/* <span className="text-sm text-white  p-[6px] border-solid border-[1.3px] border-white rounded-full">
               Beta
             </span> */}
-          </h1>
+          </Link>
         </div>
         <div className="flex items-center space-x-4">
           <Link
-            href="/#"
+            href="/get-started"
             className="appearance-none cursor-pointer px-6 py-1 font-heading rounded-full text-sm bg-green-500/10 border border-green-500/20 hover:bg-green-500/20 focus-visible:bg-white/20 text-green-500 backdrop-blur-sm transition-all duration-200"
           >
             Join a room
           </Link>
           <Link
-            href="/#"
+            href="/get-started"
             className="appearance-none cursor-pointer px-6 py-1 font-heading rounded-full text-sm bg-sky-500/10 border border-sky-500/20 hover:bg-sky-500/20 focus-visible:bg-white/20 text-sky-500 backdrop-blur-sm transition-all duration-200"
           >
             Host a room

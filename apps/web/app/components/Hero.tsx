@@ -35,7 +35,7 @@ const Hero = () => {
 
             <div className="flex justify-center">
               <Link
-                href="/#"
+                href="/get-started"
                 className="group relative px-8 py-4 bg-[#0f0f0f] cursor-pointer text-white font-semibold rounded-full shadow-lg border-none hover:-translate-y-1 transition-all duration-300 transform hover:scale-105"
               >
                 <span className="relative z-10">Get Started</span>
