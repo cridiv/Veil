@@ -1,4 +1,4 @@
-import { IsString, Length, Matches, IsNotEmpty } from 'class-validator';
+import { IsString, Length, Matches, IsNotEmpty, IsUUID } from 'class-validator';
 
 export class JoinRoomDto {
     @IsString()
@@ -11,5 +11,13 @@ export class JoinRoomDto {
       message: 'Username cannot contain HTML characters (<, >, ", \', &)',
     })
     username: string;
+
+    @IsUUID()
+    @IsNotEmpty()
+    roomId: string;
+
+    @IsUUID()
+    @IsNotEmpty()
+    ttl: number;
 }
 
