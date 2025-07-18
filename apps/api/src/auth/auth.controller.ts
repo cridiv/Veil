@@ -22,4 +22,20 @@ googleAuthRedirect(@Req() req, @Res() res: Response) {
 
     res.redirect(`http://localhost:3000/client-handler?token=${token}`)
 }
-};
+
+@Get('twitter')
+@UseGuards(AuthGuard('twitter'))
+async twitterAuth(){}
+
+@Get('twitter/redirect')
+@UseGuards(AuthGuard('twitter'))
+twitterAuthRedirect(@Req() req, @Res() res: Response) {
+    const user = req.user;
+
+    const token = jwt.sign(user, process.env.JWT_SECRET, {
+      expiresIn: '1h'
+    });
+
+    res.redirect(`http://localhost:3000/client-handler?token=${token}`)
+}
+}

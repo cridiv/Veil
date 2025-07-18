@@ -17,7 +17,7 @@ const GetStarted = () => {
 
   const handleAuthTwitter = () => {
     console.log("Twitter authentication initiated");
-
+    window.location.href = 'http://localhost:5000/auth/twitter'
     // Handle Twitter authentication logic here
     router.push("/client-handler");
   };

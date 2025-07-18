@@ -5,9 +5,10 @@ import { PassportModule } from '@nestjs/passport';
 import { GoogleStrategy } from './google.strategy';
 import { JwtModule } from '@nestjs/jwt';
 import { AuthController } from './auth.controller';
+import {TwitterStrategy } from './twitter.strategy';
 
 @Module({
-  providers: [AuthService, GoogleStrategy],
+  providers: [AuthService, GoogleStrategy, TwitterStrategy],
   controllers: [AuthController],
   imports: [RoomModule, JwtModule, PassportModule],
   exports: [AuthService, JwtModule]
