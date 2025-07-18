@@ -35,6 +35,12 @@ export class TempUserService {
 
      await this.tempUserStoreService.getUser(userId);
 
+     await this.tempUserStoreService.deleteUser(userId);
+
+     await this.tempUserStoreService.getRoomUsers(room.id);
+
+     await this.tempUserStoreService.getRoomUserCount(room.id);
+     
     return {
         user: {
             id: userId,

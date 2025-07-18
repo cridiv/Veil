@@ -1,25 +1,31 @@
-import React from "react";
+"use client";
 
-const page = () => {
+import { useEffect, useState } from "react";
+
+export default function Dashboard() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  
+  useEffect(() => {
+    const token = localStorage.getItem("auth_token");
+    if (token) {
+      setIsAuthenticated(true);
+    } else {
+      window.location.href = "/login";
+    }
+  }, []);
+
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p>Checking authentication...</p>
+      </div>
+    );
+  }
+
   return (
-    <div>
-      <h1>Moderator dashboard</h1>
-      <p>
-        {" "}
-        Welcome to the moderator dashboard. Here you can manage your room and
-        users.
-      </p>
-      <p>
-        name: <span> the user name </span>
-      </p>
-      <p>
-        email: <span> the user email </span>
-      </p>
-      <p>
-        id: <span> the user uid </span>
-      </p>
+    <div className="min-h-screen p-8">
+      <h1 className="text-2xl font-bold mb-4">Dashboard</h1>
+      <p>You are logged in successfully!</p>
     </div>
   );
-};
-
-export default page;
+}

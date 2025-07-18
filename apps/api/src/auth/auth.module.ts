@@ -1,11 +1,15 @@
 import { Module } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { RoomModule } from 'src/room/room.module';
+import { PassportModule } from '@nestjs/passport';
+import { GoogleStrategy } from './google.strategy';
 import { JwtModule } from '@nestjs/jwt';
+import { AuthController } from './auth.controller';
 
 @Module({
-  providers: [AuthService],
-  imports: [RoomModule, JwtModule],
+  providers: [AuthService, GoogleStrategy],
+  controllers: [AuthController],
+  imports: [RoomModule, JwtModule, PassportModule],
   exports: [AuthService, JwtModule]
 })
 export class AuthModule {}

@@ -11,8 +11,7 @@ const GetStarted = () => {
 
   const handleAuthGoogle = () => {
     console.log("Google authentication initiated");
-
-    // Handle Google authentication logic here
+    window.location.href = 'http://localhost:5000/auth/google'
     router.push("/client-handler");
   };
 
