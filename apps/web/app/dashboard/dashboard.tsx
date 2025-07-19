@@ -1,5 +1,6 @@
 import React from "react";
 import ActivityTable, { ActivityItem } from "./components/ActivityTable";
+import Link from "next/link";
 
 const Dashboard = () => {
   // Sample data for the activity table
@@ -38,6 +39,14 @@ const Dashboard = () => {
             Active Polls
           </h2>
           <p className="text-3xl font-bold text-purple-600">12</p>
+          <div className="mt-4">
+            <Link
+              href="/dashboard/polls"
+              className="text-sm text-purple-600 hover:underline"
+            >
+              View all polls →
+            </Link>
+          </div>
         </div>
 
         <div className="bg-white rounded-lg shadow p-6">

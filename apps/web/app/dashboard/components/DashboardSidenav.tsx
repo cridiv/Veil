@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 // Icons for the sidebar items
 import HomeIcon from "./svg/HomeIcon";
 import PollIcon from "./svg/PollIcon";
@@ -50,6 +51,7 @@ const NavItem = ({
 
 const DashboardSidenav = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const pathname = usePathname();
 
   const toggleSidebar = () => {
     setIsCollapsed(!isCollapsed);
@@ -85,19 +87,21 @@ const DashboardSidenav = () => {
               label="Dashboard"
               href="/dashboard"
               isCollapsed={isCollapsed}
-              isActive={true}
+              isActive={pathname === "/dashboard"}
             />
             <NavItem
               icon={<PollIcon />}
               label="My Polls"
               href="/dashboard/polls"
               isCollapsed={isCollapsed}
+              isActive={pathname === "/dashboard/polls"}
             />
             <NavItem
               icon={<AnalyticsIcon />}
               label="Analytics"
               href="/dashboard/analytics"
               isCollapsed={isCollapsed}
+              isActive={pathname === "/dashboard/analytics"}
             />
             {/* Divider */}
             {/* <div className="my-4 border-t border-gray-200"></div>
