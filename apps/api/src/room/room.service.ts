@@ -1,17 +1,28 @@
 import { Injectable } from '@nestjs/common';
+import { CreateRoomDto } from './dto/create-room.dto';
+import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class RoomService {
-    async findRoomBySlug(slug: string): Promise<any> {
-        if ( slug !== 'test-room') {
-            return null;
+    constructor(private prisma: PrismaService) {}
+
+    async createRoom(dto: CreateRoomDto, moderatorId: string): Promise<any> {
+        const existing = await this.prisma.room.findUnique({ where: { slug: dto.slug } });
+        if (existing) {
+            throw new Error('Room with this slug already exists');
         }
 
-        return {
-            id: 'room-123',
-            slug: 'test-room',
-            title: 'Testing Room'
-        }
+        return this.prisma.room.create({
+            data: {
+                title: dto.title,
+                slug: dto.slug,
+                moderatorId: moderatorId
+            }
+        });
+    }
+
+    async findRoomBySlug(slug: string): Promise<any> {
+        return this.prisma.room.findUnique({ where: { slug }, include: { moderator: true } });
     }
     
 }
