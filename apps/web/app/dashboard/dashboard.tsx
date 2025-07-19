@@ -54,6 +54,14 @@ const Dashboard = () => {
             Total Responses
           </h2>
           <p className="text-3xl font-bold text-purple-600">846</p>
+          <div className="mt-4">
+            <Link
+              href="/dashboard/analytics"
+              className="text-sm text-purple-600 hover:underline"
+            >
+              View analytics →
+            </Link>
+          </div>
         </div>
 
         <div className="bg-white rounded-lg shadow p-6">
