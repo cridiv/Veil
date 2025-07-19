@@ -1,4 +1,4 @@
-import { IsString, Matches, MinLength, Length } from 'class-validator'
+import { IsString, Matches, MinLength, Length, IsOptional } from 'class-validator'
 
 export class CreateRoomDto {
 @IsString()
@@ -9,4 +9,8 @@ title: string;
 @Matches(/^[a-z0-9\-]+$/, { message: 'Slug can only contain lowercase letters, numbers, and hyphens' })
 @Length(3, 30)
 slug: string;
+
+  @IsOptional()
+  @IsString()
+  description?: string;
 }

@@ -16,7 +16,8 @@ export class RoomService {
             data: {
                 title: dto.title,
                 slug: dto.slug,
-                moderatorId: moderatorId
+                description: dto.description || '',
+                moderatorId,
             }
         });
     }
