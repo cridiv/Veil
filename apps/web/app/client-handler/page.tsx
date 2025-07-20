@@ -10,7 +10,8 @@ export default function ClientHandler() {
     const handleAuthRedirect = () => {
       const urlParams = new URLSearchParams(window.location.search);
       const token = urlParams.get('token');
-      
+      console.log("Full URL:", window.location.href);
+      console.log("Token:", token);
 
       if (token) {
         setStatus("Token found, storing...");
@@ -28,7 +29,7 @@ export default function ClientHandler() {
       } else {
         console.log("No token found, redirecting to login");
         setStatus("No token found, redirecting...");
-        router.push("/login");
+        router.push("/get-started");
       }
     };
     

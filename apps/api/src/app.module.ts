@@ -8,6 +8,7 @@ import { PollModule } from './poll/poll.module';
 import { WebsocketModule } from './websocket/websocket.module';
 import { CacheModule } from '@nestjs/cache-manager'
 import * as redisStore from 'cache-manager-redis-store';
+import { AccountModule } from './account/account.module';
 
 @Module({
   imports: [
@@ -23,7 +24,8 @@ import * as redisStore from 'cache-manager-redis-store';
     TempUserModule,
     QuestionModule,
     PollModule,
-    WebsocketModule,
+    AccountModule,
+    WebsocketModule
   ],
 })
 export class AppModule {}

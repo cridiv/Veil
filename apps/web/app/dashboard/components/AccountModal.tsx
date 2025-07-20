@@ -2,27 +2,35 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import { X, Mail, Calendar } from "lucide-react";
+import { fetchProfile } from '../../lib/api';
 
 interface AccountModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
+interface Profile {
+  email: string;
+  name: string;
+  picture: string;
+  createdAt: string;
+}
+
+
 const AccountModal: React.FC<AccountModalProps> = ({ isOpen, onClose }) => {
   const modalRef = useRef<HTMLDivElement>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [avatarError, setAvatarError] = useState(false);
+  const [profile, setProfile] = useState<Profile | null>(null);
 
-  // Sample user data - in a real app, this would come from your authentication system
-  const [userInfo, setUserInfo] = useState({
-    name: "John Doe",
-    email: "john.doe@example.com",
-    profileImageUrl: "",
-    joined: "July 15, 2025",
-  });
+    useEffect(() => {
+    fetchProfile()
+      .then(data => setProfile(data))
+      .catch(console.error)
+      .finally(() => setIsLoading(false));
+  }, []);
 
-  // Handle clicking outside to close
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -126,31 +134,27 @@ const AccountModal: React.FC<AccountModalProps> = ({ isOpen, onClose }) => {
             </p>
             <p className="text-gray-500 text-xs text-center">{error}</p>
           </div>
-        ) : userInfo ? (
+        ) : profile ? (
           <>
             <div className="flex flex-col items-center mb-6">
               <div className="relative">
                 {!avatarError ? (
                   <img
-                    src={
-                      userInfo.profileImageUrl
-                        ? userInfo.profileImageUrl
-                        : generateAvatarUrl(userInfo.name)
-                    }
-                    alt={userInfo.name}
+                    src={profile.picture}
+                    alt={profile.name}
                     className="w-24 h-24 rounded-full object-cover border-2  border-purple-500/30"
                     onError={() => setAvatarError(true)}
                   />
                 ) : (
                   <div className="w-24 h-24 rounded-full bg-purple-600 flex items-center justify-center text-white text-2xl font-semibold border-2 border-purple-500/30">
-                    {getInitials(userInfo.name)}
+                    {getInitials(profile.name)}
                   </div>
                 )}
               </div>
 
               <div className="mt-4 text-center">
                 <h3 className="text-lg font-semibold text-black">
-                  {userInfo.name}
+                  {profile.name}
                 </h3>
               </div>
             </div>
@@ -161,7 +165,7 @@ const AccountModal: React.FC<AccountModalProps> = ({ isOpen, onClose }) => {
                 <div className="flex-1 min-w-0">
                   <p className="text-xs text-white">Email</p>
                   <p className="text-sm text-white truncate">
-                    {userInfo.email}
+                    {profile.email}
                   </p>
                 </div>
               </div>
@@ -170,7 +174,7 @@ const AccountModal: React.FC<AccountModalProps> = ({ isOpen, onClose }) => {
                 <Calendar size={18} className="text-purple-800" />
                 <div>
                   <p className="text-xs text-white">Joined</p>
-                  <p className="text-sm text-white">{userInfo.joined}</p>
+                  <p className="text-sm text-white">{profile.createdAt}</p>
                 </div>
               </div>
             </div>
