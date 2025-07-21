@@ -116,7 +116,7 @@ const QuestionsList: React.FC<QuestionsListProps> = ({
                 <div className="flex space-x-2">
                   <button
                     onClick={() => toggleVisibility(question)}
-                    className="p-1.5 text-gray-500 hover:text-gray-700 rounded-md hover:bg-gray-100"
+                    className="p-1.5 cursor-pointer text-gray-500 hover:text-gray-700 rounded-md hover:bg-gray-100"
                     title={
                       question.isHidden ? "Show question" : "Hide question"
                     }
@@ -133,14 +133,14 @@ const QuestionsList: React.FC<QuestionsListProps> = ({
                         expandedQuestion === question.id ? null : question.id
                       )
                     }
-                    className="p-1.5 text-gray-500 hover:text-gray-700 rounded-md hover:bg-gray-100"
+                    className="p-1.5 text-gray-500 cursor-pointer hover:text-gray-700 rounded-md hover:bg-gray-100"
                     title="Edit question"
                   >
                     <Edit2 size={18} />
                   </button>
                   <button
                     onClick={() => onDelete(question.id)}
-                    className="p-1.5 text-gray-500 hover:text-red-600 rounded-md hover:bg-gray-100"
+                    className="p-1.5 text-gray-500 cursor-pointer hover:text-red-600 rounded-md hover:bg-gray-100"
                     title="Delete question"
                   >
                     <Trash2 size={18} />
@@ -156,7 +156,7 @@ const QuestionsList: React.FC<QuestionsListProps> = ({
                       {question.options.map((option, index) => (
                         <div
                           key={index}
-                          className="text-sm bg-gray-50 p-2 rounded border border-gray-200"
+                          className="text-sm text-black bg-gray-50 p-2 rounded border border-gray-200"
                         >
                           {option}
                         </div>

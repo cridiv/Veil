@@ -151,10 +151,10 @@ const PollDetailPage = () => {
         <div className="lg:col-span-2">
           <div className="bg-white rounded-lg shadow p-6">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-semibold">Questions</h2>
+              <h2 className="text-xl text-black font-semibold">Questions</h2>
               <button
                 onClick={() => setIsAddingQuestion(true)}
-                className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700"
+                className="px-4 py-2 cursor-pointer bg-purple-600 text-white rounded-md hover:bg-purple-700"
               >
                 Add Question
               </button>
@@ -179,15 +179,15 @@ const PollDetailPage = () => {
 
         <div className="lg:col-span-1">
           <PollStats poll={poll} />
-
-          {isAddingQuestion && (
-            <AddQuestionPanel
-              onAdd={handleAddQuestion}
-              onCancel={() => setIsAddingQuestion(false)}
-            />
-          )}
         </div>
       </div>
+
+      {isAddingQuestion && (
+        <AddQuestionPanel
+          onAdd={handleAddQuestion}
+          onCancel={() => setIsAddingQuestion(false)}
+        />
+      )}
     </div>
   );
 };

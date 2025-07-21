@@ -41,6 +41,10 @@ const PollHeader: React.FC<PollHeaderProps> = ({
   // Move the ref inside the component
   const qrRef = useRef<HTMLDivElement>(null);
 
+  const handleOnBlur = () => {
+    setShowShareOptions(false);
+  };
+
   const pollUrl = `${window.location.origin}/room/${poll.code}`;
 
   const handleCopyLink = () => {
@@ -153,7 +157,11 @@ const PollHeader: React.FC<PollHeaderProps> = ({
             </button>
 
             {showShareOptions && (
-              <div className="absolute right-0 mt-2 w-72 text-black bg-white rounded-lg shadow-lg z-10 p-4">
+              <div
+                className="absolute right-0 mt-2 w-72 text-black bg-white rounded-lg shadow-lg z-10 p-4"
+                onBlur={() => setShowShareOptions(!showShareOptions)}
+                tabIndex={0}
+              >
                 <h3 className="font-semibold mb-3">Share Poll</h3>
 
                 <div className="mb-4">
