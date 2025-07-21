@@ -31,7 +31,7 @@ const CreatePollModal: React.FC<CreatePollModalProps> = ({
   };
 
   // Handle form submission
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     // Validate form
     if (!pollName.trim()) {
       setFormError("Please enter a poll name");
@@ -71,18 +71,43 @@ const CreatePollModal: React.FC<CreatePollModalProps> = ({
       status = "past";
     }
 
-    // Create new poll
-    onCreatePoll({
-      name: pollName,
-      code: generateCode(),
-      status,
-      startDate: new Date(startDate),
-      endDate: new Date(endDate),
-    });
+    const slug = generateCode().toLowerCase(); 
 
-    // Reset form
-    handleClose();
-  };
+try {
+  const token = localStorage.getItem('auth_token');
+
+  const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/rooms`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({
+      title: pollName,
+      slug: slug,
+      description: '',
+    }),
+  });
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    throw new Error(data.message || 'Failed to create room');
+  }
+
+  onCreatePoll({
+    name: pollName,
+    code: slug,
+    status,
+    startDate: new Date(startDate),
+    endDate: new Date(endDate),
+  });
+
+  handleClose();
+} catch (err: any) {
+  setFormError(err.message || 'Failed to create room');
+}};
 
   // Handle date changes
   const handleDateChange = (type: "start" | "end", value: string) => {

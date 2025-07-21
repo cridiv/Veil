@@ -1,10 +1,13 @@
 "use client";
 
 import React from "react";
+import { useState } from "react";
 import GoogleIcon from "../svg/GoogleIcon";
 import TwitterIcon from "../svg/TwitterIcon";
 import JoinIcon from "../svg/JoinIcon";
 import { useRouter } from "next/navigation";
+import { joinRoom, setTempUser } from "../lib/api";
+
 
 const GetStarted = () => {
   const router = useRouter();

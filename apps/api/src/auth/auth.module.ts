@@ -7,9 +7,11 @@ import { JwtModule } from '@nestjs/jwt';
 import { AuthController } from './auth.controller';
 import {TwitterStrategy } from './twitter.strategy';
 import { JwtStrategy } from './jwt.strategy';
+import { ModeratorAuthService } from './moderator-auth.service'
+import { PrismaService } from '../prisma/prisma.service';
 
 @Module({
-  providers: [AuthService, GoogleStrategy, TwitterStrategy, JwtStrategy],
+  providers: [AuthService, GoogleStrategy, TwitterStrategy, JwtStrategy, ModeratorAuthService, PrismaService],
   controllers: [AuthController],
   imports: [RoomModule, JwtModule, PassportModule],
   exports: [AuthService, JwtModule]

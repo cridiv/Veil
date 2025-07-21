@@ -10,8 +10,6 @@ export default function ClientHandler() {
     const handleAuthRedirect = () => {
       const urlParams = new URLSearchParams(window.location.search);
       const token = urlParams.get('token');
-      console.log("Full URL:", window.location.href);
-      console.log("Token:", token);
 
       if (token) {
         setStatus("Token found, storing...");

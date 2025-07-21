@@ -18,3 +18,26 @@ export async function fetchProfile() {
 }
   return res.json();
 }
+
+export async function joinRoom(slug: string, username: string) {
+  const response = await fetch(`/user/room/${slug}/users`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ username }),
+  });
+  return response.json();
+}
+
+export async function setTempUser(username: string, roomId: string, ttl = 3600) {
+  const response = await fetch(`/api/user/temp-user`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ username, roomId, ttl }),
+  });
+  return response.json();
+}
+

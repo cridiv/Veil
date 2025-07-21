@@ -20,10 +20,11 @@ app.use(
     secret: 'keyboard cat',
     resave: false,
     saveUninitialized: false,
-    cookie: {
-      sameSite: 'lax', // or 'none' for cross-site
-      secure: false,   // set to true in production with HTTPS
-    },
+ cookie: {
+        httpOnly: true,
+        secure: false, // set to true in production with HTTPS
+        maxAge: 1000 * 60 * 60 * 24, // 1 day
+      },
   }),
 );
 
@@ -34,15 +35,6 @@ app.use(
     forbidNonWhitelisted: true,
     transform: true,
   }));
-
-    app.use(
-    session({
-      secret: 'keyboard cat',
-      resave: false,
-      saveUninitialized: false,
-      cookie: { maxAge: 3600000 },
-    }),
-  );
 
   app.use(passport.initialize());
   app.use(passport.session());

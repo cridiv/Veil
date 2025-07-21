@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { CreateRoomDto } from './dto/create-room.dto';
 import { PrismaService } from '../prisma/prisma.service';
-
 @Injectable()
 export class RoomService {
     constructor(private prisma: PrismaService) {}
@@ -17,7 +16,7 @@ export class RoomService {
                 title: dto.title,
                 slug: dto.slug,
                 description: dto.description || '',
-                moderatorId,
+                moderatorId: moderatorId,
             }
         });
     }
