@@ -8,10 +8,36 @@ import JoinIcon from "../svg/JoinIcon";
 import { useRouter } from "next/navigation";
 import { joinRoom, setTempUser } from "../lib/api";
 
+export const LoadingSpinner = () => {
+  return (
+    <svg
+      className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 24 24"
+    >
+      <circle
+        className="opacity-25"
+        cx="12"
+        cy="12"
+        r="10"
+        stroke="currentColor"
+        strokeWidth="4"
+      ></circle>
+      <path
+        className="opacity-75"
+        fill="currentColor"
+        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+      ></path>
+    </svg>
+  );
+};
+
 const GetStarted = () => {
   const [userName, setUserName] = useState("");
   const [roomCode, setRoomCode] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
 
   const handleAuthGoogle = () => {
@@ -38,11 +64,14 @@ const GetStarted = () => {
       return;
     }
     setError("");
+    setLoading(true);
     // send the temporary user name to the backend here if necessary tho, but i save it to local storage
     localStorage.setItem("tempUserName", userName);
-
-    window.location.href = `/room/${roomCode}`;
-    console.log("Joining room with code");
+    // Add a small delay to show the loading animation
+    setTimeout(() => {
+      window.location.href = `/room/${roomCode}`;
+    }, 500);
+    // Optionally, you can call an API to join the room
   };
 
   return (
@@ -54,7 +83,7 @@ const GetStarted = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {/* Join as participant column */}
-          <div className="bg-[#af1aff] rounded-lg shadow-xl p-8 flex flex-col h-full">
+          <div className="bg-purple-600 rounded-lg shadow-xl p-8 flex flex-col h-full">
             <h2 className="text-2xl font-bold mb-2">Join as a participant</h2>
             <small className="text-base-content/70 mb-6 block">
               No account needed
@@ -83,6 +112,7 @@ const GetStarted = () => {
                   onChange={(e) => setRoomCode(e.target.value)}
                   className="input bg-white text-black border-[2px] rounded-full border-white input-bordered w-full pr-24 focus:input-primary focus:z-0"
                 />
+                {/* add a spinning loading animation when user clicks join */}
                 <button
                   className="cursor-pointer absolute right-1 top-1/2 -translate-y-1/2 z-10 bg-[#af1aff] text-white px-4 py-1.5 rounded-full flex items-center gap-1 hover:bg-[#9615e3] transition-colors border-none shadow-none outline-none"
                   style={{
@@ -90,12 +120,22 @@ const GetStarted = () => {
                     touchAction: "manipulation",
                   }}
                   onClick={handleJoinRoom}
+                  disabled={loading}
                 >
-                  Join
-                  <JoinIcon />
+                  {loading ? (
+                    <>
+                      {" "}
+                      <LoadingSpinner /> Joining...
+                    </>
+                  ) : (
+                    <>
+                      Join
+                      <JoinIcon />
+                    </>
+                  )}
                 </button>
               </div>
-              <span className="text-red-500 text-sm mt-2">{error}</span>
+              <span className="text-red-600 text-sm mt-2">{error}</span>
             </div>
 
             <div className="mt-auto bg-base-300 p-4 rounded-lg">
