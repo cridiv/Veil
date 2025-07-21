@@ -31,7 +31,7 @@ const PollStats: React.FC<PollStatsProps> = ({ poll }) => {
 
   return (
     <div className="bg-white rounded-lg shadow p-6">
-      <h2 className="text-xl font-semibold mb-4">Poll Stats</h2>
+      <h2 className="text-xl text-black font-semibold mb-4">Poll Stats</h2>
 
       <div className="grid grid-cols-1 gap-4">
         <div className="flex items-start">
@@ -40,7 +40,7 @@ const PollStats: React.FC<PollStatsProps> = ({ poll }) => {
           </div>
           <div>
             <div className="text-sm text-gray-500 mb-1">Poll Duration</div>
-            <div className="font-medium">
+            <div className="font-medium text-black">
               {formatDate(poll.startDate)} - {formatDate(poll.endDate)}
             </div>
           </div>
@@ -70,18 +70,20 @@ const PollStats: React.FC<PollStatsProps> = ({ poll }) => {
           </div>
           <div>
             <div className="text-sm text-gray-500 mb-1">Responses</div>
-            <div className="font-medium">{poll.responses}</div>
+            <div className="font-medium text-black">{poll.responses}</div>
           </div>
         </div>
 
         <div className="mt-6">
-          <h3 className="text-lg font-medium mb-3">Live Participation</h3>
+          <h3 className="text-lg font-medium mb-3 text-black">
+            Live Participation
+          </h3>
 
           <div className="space-y-3">
             <div>
               <div className="flex justify-between text-sm">
                 <span className="text-gray-500">Active Users</span>
-                <span className="font-medium">0</span>
+                <span className="font-medium text-black">0</span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2.5 mt-1">
                 <div className="bg-purple-600 h-2.5 rounded-full w-0"></div>
@@ -91,7 +93,7 @@ const PollStats: React.FC<PollStatsProps> = ({ poll }) => {
             <div>
               <div className="flex justify-between text-sm">
                 <span className="text-gray-500">Response Rate</span>
-                <span className="font-medium">0%</span>
+                <span className="font-medium text-black">0%</span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2.5 mt-1">
                 <div className="bg-green-500 h-2.5 rounded-full w-0"></div>
