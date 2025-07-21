@@ -39,13 +39,13 @@ const PollHeader: React.FC<PollHeaderProps> = ({
         <div className="flex items-center space-x-3">
           <button
             onClick={onBack}
-            className="p-2 rounded-full hover:bg-gray-100"
+            className="p-2 rounded-full cursor-pointer hover:bg-gray-100"
             aria-label="Go back"
           >
             <ArrowLeft size={20} className="text-gray-600" />
           </button>
           <div>
-            <h1 className="text-2xl font-bold">{poll.name}</h1>
+            <h1 className="text-2xl text-black font-bold">{poll.name}</h1>
             <div className="flex items-center text-sm text-gray-500 mt-1">
               <span className="font-medium">Poll ID:</span>
               <span className="ml-2">{poll.id}</span>
@@ -60,7 +60,7 @@ const PollHeader: React.FC<PollHeaderProps> = ({
           <div className="relative">
             <button
               onClick={() => setShowShareOptions(!showShareOptions)}
-              className="px-4 py-2 bg-purple-100 text-purple-700 rounded-md hover:bg-purple-200 flex items-center"
+              className="px-4 py-2 bg-purple-100 cursor-pointer text-purple-700 rounded-md hover:bg-purple-200 flex items-center"
             >
               <Share2 size={16} className="mr-2" />
               Share
@@ -122,7 +122,7 @@ const PollHeader: React.FC<PollHeaderProps> = ({
 
           <button
             onClick={onToggleLive}
-            className={`px-4 py-2 rounded-md ${
+            className={`px-4 py-2 rounded-md cursor-pointer ${
               isLive
                 ? "bg-red-100 text-red-700 hover:bg-red-200"
                 : "bg-green-100 text-green-700 hover:bg-green-200"

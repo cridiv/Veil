@@ -33,9 +33,9 @@ const ActivityTable: React.FC<ActivityTableProps> = ({
   };
 
   return (
-    <div className="mt-8">
+    <div className="mt-8 w-full">
       <h2 className="text-xl text-black font-semibold mb-4">{title}</h2>
-      <div className="bg-white rounded-lg shadow overflow-hidden">
+      <div className="bg-white rounded-lg shadow ">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
