@@ -8,21 +8,41 @@ import JoinIcon from "../svg/JoinIcon";
 import { useRouter } from "next/navigation";
 import { joinRoom, setTempUser } from "../lib/api";
 
-
 const GetStarted = () => {
+  const [userName, setUserName] = useState("");
+  const [roomCode, setRoomCode] = useState("");
+  const [error, setError] = useState("");
   const router = useRouter();
 
   const handleAuthGoogle = () => {
     console.log("Google authentication initiated");
-    window.location.href = 'http://localhost:5000/auth/google'
+    window.location.href = "http://localhost:5000/auth/google";
     router.push("/client-handler");
   };
 
   const handleAuthTwitter = () => {
     console.log("Twitter authentication initiated");
-    window.location.href = 'http://localhost:5000/auth/twitter'
+    window.location.href = "http://localhost:5000/auth/twitter";
     // Handle Twitter authentication logic here
     router.push("/client-handler");
+  };
+
+  const handleJoinRoom = () => {
+    if (
+      !userName ||
+      !roomCode ||
+      userName.trim() === "" ||
+      roomCode.trim() === ""
+    ) {
+      setError("Please enter both your name and room code.");
+      return;
+    }
+    setError("");
+    // send the temporary user name to the backend here if necessary tho, but i save it to local storage
+    localStorage.setItem("tempUserName", userName);
+
+    window.location.href = `/room/${roomCode}`;
+    console.log("Joining room with code");
   };
 
   return (
@@ -39,6 +59,18 @@ const GetStarted = () => {
             <small className="text-base-content/70 mb-6 block">
               No account needed
             </small>
+            {/* Enter user name Section */}
+            <div className="form-control w-full mb-6">
+              <label className="label">
+                <span className="label-text">Your Name</span>
+              </label>
+              <input
+                type="text"
+                placeholder="Enter your name"
+                onChange={(e) => setUserName(e.target.value)}
+                className="input bg-white text-black border-[2px] rounded-full border-white input-bordered w-full focus:input-primary focus:z-0"
+              />
+            </div>
 
             <div className="form-control w-full mb-6">
               <label className="label">
@@ -48,6 +80,7 @@ const GetStarted = () => {
                 <input
                   type="text"
                   placeholder="Enter room code"
+                  onChange={(e) => setRoomCode(e.target.value)}
                   className="input bg-white text-black border-[2px] rounded-full border-white input-bordered w-full pr-24 focus:input-primary focus:z-0"
                 />
                 <button
@@ -56,12 +89,13 @@ const GetStarted = () => {
                     transform: "translateY(0%)",
                     touchAction: "manipulation",
                   }}
-                  onClick={(e) => e.currentTarget.blur()}
+                  onClick={handleJoinRoom}
                 >
                   Join
                   <JoinIcon />
                 </button>
               </div>
+              <span className="text-red-500 text-sm mt-2">{error}</span>
             </div>
 
             <div className="mt-auto bg-base-300 p-4 rounded-lg">
