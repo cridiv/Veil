@@ -4,6 +4,7 @@ import { AppModule } from './app.module';
 import * as dotenv from 'dotenv';
 import * as passport from 'passport';
 import * as session from 'express-session';
+import { IoAdapter } from '@nestjs/platform-socket.io';
 
 dotenv.config();
 
@@ -38,7 +39,7 @@ app.use(
 
   app.use(passport.initialize());
   app.use(passport.session());
-
+  app.useWebSocketAdapter(new IoAdapter(app));
   
   await app.listen(process.env.PORT ?? 5000);
 }
