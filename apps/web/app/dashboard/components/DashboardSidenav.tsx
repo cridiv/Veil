@@ -94,7 +94,10 @@ const DashboardSidenav = () => {
               label="My Polls"
               href="/dashboard/polls"
               isCollapsed={isCollapsed}
-              isActive={pathname === "/dashboard/polls"}
+              isActive={
+                pathname === "/dashboard/polls" ||
+                pathname.startsWith("/dashboard/polls/")
+              }
             />
             <NavItem
               icon={<AnalyticsIcon />}
