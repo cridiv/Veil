@@ -34,14 +34,16 @@ model Room {
 }
 
 model Question {
-  id         String   @id @default(uuid())
-  roomId     String
-  room       Room     @relation(fields: [roomId], references: [id])
+  id         String   @id @default(cuid())
   content    String
-  username   String
-  answer     String?      // null until answered
-  answeredBy String?      // moderator username or id
+  askedBy    String   // temp username (not relational)
+  isHidden   Boolean  @default(false)
   createdAt  DateTime @default(now())
+
+  room       Room     @relation(fields: [roomId], references: [id])
+  roomId     String
+
+  reply      Reply?
 }
 
 model Reply {

@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Param, Get, Delete } from '@nestjs/common';
+import { Controller, Post, Body, Param, Get, Delete, BadRequestException } from '@nestjs/common';
 import { JoinRoomDto } from './dto/join-room.dto';
 import { TempUserService } from './temp-user.service';
 import { TempUserStoreService } from './redis-store/temp-user-store.service';
@@ -14,6 +14,9 @@ export class TempUserController {
         @Param('slug') slug: string,
         @Body() joinRoomDto: JoinRoomDto
     ) {
+            if (!slug) {
+    throw new BadRequestException('Room slug is required');
+  }
            return this.tempUserService.joinRoom(slug, joinRoomDto.username);
           }
 

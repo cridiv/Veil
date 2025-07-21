@@ -1,28 +1,52 @@
 "use client";
 
-import React from "react";
-import { useState } from "react";
+import React, { useState } from "react";
 import GoogleIcon from "../svg/GoogleIcon";
 import TwitterIcon from "../svg/TwitterIcon";
 import JoinIcon from "../svg/JoinIcon";
-import { useRouter } from "next/navigation";
-import { joinRoom, setTempUser } from "../lib/api";
-
+import { useRouter, useSelectedLayoutSegment } from "next/navigation";
+import axios from "axios";
 
 const GetStarted = () => {
   const router = useRouter();
 
+  const [slug, setSlug] = useState("");
+  const [username, setUsername] = useState("");
+  const [joining, setJoining] = useState(false);
+
   const handleAuthGoogle = () => {
-    console.log("Google authentication initiated");
-    window.location.href = 'http://localhost:5000/auth/google'
+    window.location.href = "http://localhost:5000/auth/google";
     router.push("/client-handler");
   };
 
   const handleAuthTwitter = () => {
-    console.log("Twitter authentication initiated");
-    window.location.href = 'http://localhost:5000/auth/twitter'
-    // Handle Twitter authentication logic here
+    window.location.href = "http://localhost:5000/auth/twitter";
     router.push("/client-handler");
+  };
+
+  const handleJoinRoom = async () => {
+    if (!slug || !username) {
+      alert("Please enter both a room slug and a username.");
+      return;
+    }
+
+    try {
+      setJoining(true);
+      const res = await axios.post(`http://localhost:5000/user/room/${slug}/users`, {
+        username,
+      });
+
+      const { token, user } = res.data;
+
+      localStorage.setItem("auth_token", token);
+
+      router.push(`/room/${slug}`);
+    } catch (err) {
+      console.error("Failed to join room:", err);
+      alert("Could not join room. Please check the room code and try again.");
+    } finally {
+      setJoining(false);
+    }
   };
 
   return (
@@ -40,6 +64,19 @@ const GetStarted = () => {
               No account needed
             </small>
 
+            <div className="form-control w-full mb-4">
+              <label className="label">
+                <span className="label-text">Your Name</span>
+              </label>
+              <input
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="Enter your name"
+                className="input bg-white text-black border-[2px] rounded-full border-white input-bordered w-full"
+              />
+            </div>
+
             <div className="form-control w-full mb-6">
               <label className="label">
                 <span className="label-text">Room Code</span>
@@ -47,19 +84,22 @@ const GetStarted = () => {
               <div className="relative w-full">
                 <input
                   type="text"
-                  placeholder="Enter room code"
+                  value={slug}
+                  onChange={(e) => setSlug(e.target.value)}
+                  placeholder="Enter room slug"
                   className="input bg-white text-black border-[2px] rounded-full border-white input-bordered w-full pr-24 focus:input-primary focus:z-0"
                 />
                 <button
+                  disabled={joining}
                   className="cursor-pointer absolute right-1 top-1/2 -translate-y-1/2 z-10 bg-[#af1aff] text-white px-4 py-1.5 rounded-full flex items-center gap-1 hover:bg-[#9615e3] transition-colors border-none shadow-none outline-none"
                   style={{
                     transform: "translateY(0%)",
                     touchAction: "manipulation",
                   }}
-                  onClick={(e) => e.currentTarget.blur()}
+                  onClick={handleJoinRoom}
                 >
-                  Join
-                  <JoinIcon />
+                  {joining ? "Joining..." : "Join"}
+                  {!joining && <JoinIcon />}
                 </button>
               </div>
             </div>

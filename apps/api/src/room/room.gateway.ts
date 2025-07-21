@@ -21,12 +21,12 @@ import crypto from 'crypto';
 })
 export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
   constructor(
-    private server: Server,
     private roomService: RoomService,
     private tempUserStoreService: TempUserStoreService,
     private questionStoreService: QuestionStoreService
   ) {}
-
+  
+  server: Server;
   private socketUserMap = new Map<string, { userId: string; roomId: string }>();
 
   async handleConnection(client: Socket) {
