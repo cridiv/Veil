@@ -6,6 +6,8 @@ import QuestionsList from "./components/QuestionsList";
 import AddQuestionPanel from "./components/AddQuestionPanel";
 import PollStats from "./components/PollStats";
 import LoadingSkeleton from "./components/LoadingSkeleton";
+import AudienceQAManagerContainer from "./components/AudienceQAManagerContainer";
+import { useMockAudienceQuestions } from "./hooks/useMockAudienceQuestions";
 import { Poll, Question, QuestionType } from "../../../types/poll";
 
 const PollDetailPage = () => {
@@ -18,6 +20,8 @@ const PollDetailPage = () => {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [isLive, setIsLive] = useState(false);
   const [isAddingQuestion, setIsAddingQuestion] = useState(false);
+  const [selectedAudienceQAQuestion, setSelectedAudienceQAQuestion] =
+    useState<Question | null>(null);
 
   // Fetch poll data
   useEffect(() => {
@@ -72,6 +76,14 @@ const PollDetailPage = () => {
               required: true,
               order: 3,
             },
+            {
+              id: "q4",
+              pollId: pollId,
+              text: "Questions for the speaker?",
+              type: "audience-qa",
+              required: false,
+              order: 4,
+            },
           ];
 
           setPoll(mockPoll);
@@ -109,6 +121,14 @@ const PollDetailPage = () => {
     setQuestions(
       questions.map((q) => (q.id === updatedQuestion.id ? updatedQuestion : q))
     );
+  };
+
+  const handleSelectAudienceQAQuestion = (question: Question) => {
+    if (question.type === "audience-qa") {
+      setSelectedAudienceQAQuestion(
+        selectedAudienceQAQuestion?.id === question.id ? null : question
+      );
+    }
   };
 
   const toggleLiveStatus = () => {
@@ -172,6 +192,8 @@ const PollDetailPage = () => {
                 questions={questions}
                 onDelete={handleDeleteQuestion}
                 onUpdate={handleUpdateQuestion}
+                onSelectAudienceQA={handleSelectAudienceQAQuestion}
+                selectedAudienceQAId={selectedAudienceQAQuestion?.id}
               />
             )}
           </div>
@@ -181,6 +203,14 @@ const PollDetailPage = () => {
           <PollStats poll={poll} />
         </div>
       </div>
+
+      {/* Audience Q&A Manager */}
+      {selectedAudienceQAQuestion && (
+        <AudienceQAManagerContainer
+          question={selectedAudienceQAQuestion}
+          onClose={() => setSelectedAudienceQAQuestion(null)}
+        />
+      )}
 
       {isAddingQuestion && (
         <AddQuestionPanel

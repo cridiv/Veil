@@ -7,12 +7,16 @@ interface QuestionsListProps {
   questions: Question[];
   onDelete: (questionId: string) => void;
   onUpdate: (question: Question) => void;
+  onSelectAudienceQA?: (question: Question) => void;
+  selectedAudienceQAId?: string;
 }
 
 const QuestionsList: React.FC<QuestionsListProps> = ({
   questions,
   onDelete,
   onUpdate,
+  onSelectAudienceQA,
+  selectedAudienceQAId,
 }) => {
   const [expandedQuestion, setExpandedQuestion] = useState<string | null>(null);
 
@@ -109,6 +113,34 @@ const QuestionsList: React.FC<QuestionsListProps> = ({
                       <span className="ml-2 text-xs text-red-600">
                         Required
                       </span>
+                    )}
+
+                    {/* Special button for audience Q&A questions */}
+                    {question.type === "audience-qa" && onSelectAudienceQA && (
+                      <button
+                        onClick={() => onSelectAudienceQA(question)}
+                        className={`ml-3 px-2 py-0.5 text-xs rounded flex items-center cursor-pointer ${
+                          selectedAudienceQAId === question.id
+                            ? "bg-purple-600 text-white"
+                            : "bg-purple-100 text-purple-700 hover:bg-purple-200"
+                        }`}
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-3 w-3 mr-1"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
+                          />
+                        </svg>
+                        Moderator Room
+                      </button>
                     )}
                   </div>
                 </div>
