@@ -30,10 +30,15 @@ const PollItem: React.FC<PollItemProps> = ({
   // Copy link or code to clipboard
   const copyToClipboard = (type: "link" | "code", value: string) => {
     navigator.clipboard.writeText(
-      type === "link" ? `https://veil.app/polls/${poll.id}` : value
+      type === "link" ? `${window.location.origin}/polls/${poll.code}` : value
     );
     setShowCopiedMessage(type);
     setTimeout(() => setShowCopiedMessage(null), 2000);
+  };
+
+  // redirect to poll detail page
+  const handlePollClick = () => {
+    window.location.href = `/dashboard/polls/${poll.code}`;
   };
 
   // Get status badge
@@ -69,13 +74,18 @@ const PollItem: React.FC<PollItemProps> = ({
           type="checkbox"
           checked={isSelected}
           onChange={() => onToggleSelect(poll.id)}
-          className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
+          className="h-4 w-4 cursor-pointer bg-purple-600 focus:ring-purple-500 border-gray-300 rounded"
         />
       </td>
       <td className="px-4 py-4">
         <div className="flex items-center">
           <div>
-            <div className="text-sm font-medium text-gray-900">{poll.name}</div>
+            <div
+              className="text-sm font-medium underline decoration-solid decoration-gray-600 decoration-thickness-[0.5px] text-gray-900 cursor-pointer hover:text-purple-600 hover:decoration-purple-600"
+              onClick={handlePollClick}
+            >
+              {poll.name}
+            </div>
             <div className="text-sm text-gray-500 mt-1">
               {getStatusBadge(poll.status)}
             </div>
