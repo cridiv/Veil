@@ -54,66 +54,85 @@ const GetStarted = () => {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  // Mock functions - replace with your actual imports
+  // --- JOIN ROOM (participant, no auth header needed) ---
   const joinRoom = async (slug: string, userName: string) => {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve({
-          user: { username: userName, roomId: slug },
-          token: 'mock-token'
-        });
-      }, 1500);
+    const backend = process.env.NEXT_PUBLIC_BACKEND_URL;
+    if (!backend) throw new Error('Backend URL not configured');
+
+    const res = await fetch(`${backend}/user/room/${slug}/users`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: userName }),
     });
+
+    if (!res.ok) {
+      let msg = 'Unable to join room';
+      try {
+        const err = await res.json();
+        if (err?.message) msg = err.message;
+      } catch {}
+      throw new Error(msg);
+    }
+
+    return res.json();
   };
 
-  const setTempUser = async (username: string, roomId: string) => {
-    return Promise.resolve();
-  };
+  // optional future server-side temp storage (currently noop)
+  const setTempUser = async (_username: string, _roomId: string) => Promise.resolve();
 
+  // auth flows for moderator
   const handleAuthGoogle = () => {
     window.location.href = 'http://localhost:5000/auth/google';
     router.push('/client-handler');
   };
-
   const handleAuthTwitter = () => {
     window.location.href = 'http://localhost:5000/auth/twitter';
     router.push('/client-handler');
   };
 
   const handleJoinRoom = async () => {
-    if (!userName.trim() || !slug.trim()) {
+    const cleanName = userName.trim();
+    const cleanSlug = slug.trim().toLowerCase();
+
+    if (!cleanName || !cleanSlug) {
       setError('Please enter both your name and room code.');
       return;
     }
 
+    setError('');
+    setLoading(true);
+
     try {
-      setError('');
-      setLoading(true);
+      const response = await joinRoom(cleanSlug, cleanName);
 
-      const response = await joinRoom(slug, userName) as any;
-
-      if (!response || !response.user || !response.user.roomId) {
-        throw new Error('Invalid response from server');
+      // expected: { user: { id, username, roomId }, token }
+      if (!response?.user?.roomId) {
+        throw new Error('Invalid response from server.');
       }
 
       const { token, user } = response;
 
-      await setTempUser(user.username, user.roomId);
-      console.log('Joining with:', { slug, userName });
-
+      // persist minimal participant session
+      localStorage.setItem('temp_username', user.username);
+      localStorage.setItem('temp_room_id', user.roomId);
       if (token) {
+        // this lets participant hit protected endpoints later if needed
         localStorage.setItem('auth_token', token);
       }
+
+      await setTempUser(user.username, user.roomId); // no-op for now
+
+      console.log('Joining room:', { cleanSlug, cleanName, user });
 
       router.push(`/room/${user.roomId}`);
     } catch (err: any) {
       console.error('Join room failed:', err);
-      setError('Failed to join room. Check the room code and try again.');
+      setError(err?.message || 'Failed to join room. Check the room code and try again.');
     } finally {
       setLoading(false);
     }
   };
-
+  
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4">
       <div className="max-w-6xl mx-auto">

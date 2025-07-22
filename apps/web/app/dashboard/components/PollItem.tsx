@@ -15,7 +15,7 @@ const PollItem: React.FC<PollItemProps> = ({
   onToggleSelect,
 }) => {
   const [showCopiedMessage, setShowCopiedMessage] = useState<
-    "link" | "code" | null
+    "link" | "slug" | null
   >(null);
 
   // Format date range
@@ -27,10 +27,10 @@ const PollItem: React.FC<PollItemProps> = ({
     });
   };
 
-  // Copy link or code to clipboard
-  const copyToClipboard = (type: "link" | "code", value: string) => {
+  // Copy link or slug to clipboard
+  const copyToClipboard = (type: "link" | "slug", value: string) => {
     navigator.clipboard.writeText(
-      type === "link" ? `${window.location.origin}/polls/${poll.code}` : value
+      type === "link" ? `${window.location.origin}/polls/${poll.slug}` : value
     );
     setShowCopiedMessage(type);
     setTimeout(() => setShowCopiedMessage(null), 2000);
@@ -38,7 +38,7 @@ const PollItem: React.FC<PollItemProps> = ({
 
   // redirect to poll detail page
   const handlePollClick = () => {
-    window.location.href = `/dashboard/polls/${poll.code}`;
+    window.location.href = `/dashboard/polls/${poll.slug}`;
   };
 
   // Get status badge
@@ -94,10 +94,10 @@ const PollItem: React.FC<PollItemProps> = ({
       </td>
       <td className="px-4 py-4 hidden md:table-cell">
         <div className="flex items-center">
-          <div className="text-sm font-medium text-gray-900">{poll.code}</div>
+          <div className="text-sm font-medium text-gray-900">{poll.slug}</div>
           <button
             className="ml-2 cursor-pointer text-gray-400 hover:text-gray-600"
-            onClick={() => copyToClipboard("code", poll.code)}
+            onClick={() => copyToClipboard("slug", poll.slug)}
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -114,7 +114,7 @@ const PollItem: React.FC<PollItemProps> = ({
               />
             </svg>
           </button>
-          {showCopiedMessage === "code" && (
+          {showCopiedMessage === "slug" && (
             <span className="ml-2 text-xs text-green-600">Copied!</span>
           )}
         </div>
@@ -123,10 +123,10 @@ const PollItem: React.FC<PollItemProps> = ({
         <div className="text-sm text-gray-900">{poll.responses}</div>
       </td>
       <td className="px-4 py-4 hidden lg:table-cell">
-        <div className="text-sm text-gray-900">
-          {formatDate(poll.startDate)} - {formatDate(poll.endDate)}
-        </div>
-      </td>
+  <div className="text-sm text-gray-900">
+    {poll.createdAt ? formatDate(new Date(poll.createdAt)) : "—"}
+  </div>
+</td>
       <td className="px-4 py-4 text-right text-sm font-medium">
         <div className="flex justify-end space-x-2">
           <button

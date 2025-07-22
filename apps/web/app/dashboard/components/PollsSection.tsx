@@ -1,54 +1,13 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import PollsList from "./PollsList";
 import PollsHeader from "./PollsHeader";
 import CreatePollModal from "./CreatePollModal";
 import { Poll } from "../../types/poll";
 
 const PollsSection: React.FC = () => {
-  const [polls, setPolls] = useState<Poll[]>([
-    {
-      id: "1",
-      name: "Team Meeting Feedback",
-      code: "ABC123",
-      status: "active",
-      responses: 24,
-      startDate: new Date("2025-07-18"),
-      endDate: new Date("2025-07-25"),
-      createdAt: new Date("2025-07-15"),
-    },
-    {
-      id: "2",
-      name: "Product Launch Survey",
-      code: "XYZ456",
-      status: "active",
-      responses: 108,
-      startDate: new Date("2025-07-19"),
-      endDate: new Date("2025-07-30"),
-      createdAt: new Date("2025-07-16"),
-    },
-    {
-      id: "3",
-      name: "Customer Satisfaction Q2",
-      code: "QWE789",
-      status: "past",
-      responses: 214,
-      startDate: new Date("2025-06-01"),
-      endDate: new Date("2025-06-30"),
-      createdAt: new Date("2025-05-28"),
-    },
-    {
-      id: "4",
-      name: "Annual Company Survey",
-      code: "POI321",
-      status: "upcoming",
-      responses: 0,
-      startDate: new Date("2025-08-01"),
-      endDate: new Date("2025-08-15"),
-      createdAt: new Date("2025-07-10"),
-    },
-  ]);
+  const [polls, setPolls] = useState<Poll[]>([]);
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [selectedPolls, setSelectedPolls] = useState<string[]>([]);
@@ -56,6 +15,48 @@ const PollsSection: React.FC = () => {
     "all"
   );
   const [searchQuery, setSearchQuery] = useState("");
+
+
+useEffect(() => {
+    const fetchPolls = async () => {
+      try {
+        const token = localStorage.getItem("auth_token");
+        if (!token) {
+          console.error("No auth token found");
+          return;
+        }
+
+        const res = await fetch("http://localhost:5000/rooms", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (!res.ok) {
+          throw new Error("Failed to fetch rooms");
+        }
+
+        const data = await res.json();
+
+        // Convert rooms to Poll shape
+        const mapped = data.map((room: any): Poll => ({
+          id: room.id,
+          name: room.name,
+          slug: room.slug,
+          description: room.description,
+          createdAt: room.createdAt ? new Date(room.createdAt) : new Date(),
+          responses: 0,
+          status: "active", 
+        }));
+
+        setPolls(mapped);
+      } catch (err) {
+        console.error("Error fetching polls:", err);
+      }
+    };
+
+    fetchPolls();
+  }, []);
 
   // Filter polls based on status and search query
   const filteredPolls = polls.filter((poll) => {

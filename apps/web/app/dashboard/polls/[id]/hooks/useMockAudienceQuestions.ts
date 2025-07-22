@@ -65,7 +65,7 @@ export const useMockAudienceQuestions = (questionId: string) => {
             questionId: questionId,
             text: "When will the mobile app be released?",
             authorName: "Anonymous Attendee",
-            timestamp: new Date(Date.now() - 3 * 60000), // 3 minutes ago
+            timestamp: new Date(Date.now() - 3 * 60000),
             upvotes: 3,
             isAnswered: false,
             replies: [],

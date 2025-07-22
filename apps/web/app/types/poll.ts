@@ -1,14 +1,11 @@
 export interface Poll {
   id: string;
   name: string;
-  code: string;
+  slug: string;
   status: "active" | "upcoming" | "past";
   responses: number;
-  startDate: Date;
-  endDate: Date;
-  createdAt: Date;
+  createdAt: string | Date;
   description?: string;
-  isAnonymous?: boolean;
 }
 
 export type QuestionType =

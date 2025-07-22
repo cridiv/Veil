@@ -59,15 +59,16 @@ model Reply {
 }
 
 model Poll {
-  id         String       @id @default(cuid())
-  question   String
-  isActive   Boolean      @default(true)
-  createdAt  DateTime     @default(now())
+  id        String   @id @default(cuid())
+  name      String
+  status    String  
+  question  String
+  createdAt DateTime @default(now())
+  
+  room      Room     @relation(fields: [roomId], references: [id])
+  roomId    String
 
-  room       Room         @relation(fields: [roomId], references: [id])
-  roomId     String
-
-  options    PollOption[]
+  options   PollOption[]
 }
 
 model PollOption {

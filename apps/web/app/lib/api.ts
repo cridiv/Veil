@@ -19,6 +19,20 @@ export async function fetchProfile() {
   return res.json();
 }
 
+export const fetchWithAuth = async (url: string, token: string) => {
+  const res = await fetch(url, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!res.ok) {
+    throw new Error(`HTTP error! status: ${res.status}`);
+  }
+
+  return res.json();
+};
+
 export async function joinRoom(slug: string, username: string) {
   const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/user/room/${slug}/users`, {
     method: 'POST',

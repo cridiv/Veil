@@ -28,14 +28,16 @@ export class TempUserService {
         roomId: room.id
     });
 
+    const roomUsers = await this.tempUserStoreService.getRoomUsers(room.id);
+    const roomUserCount = await this.tempUserStoreService.getRoomUserCount(room.id);
+
+
      await this.tempUserStoreService.setUser(userId, {
       username: username,
       roomId: room.id
      });
 
      await this.tempUserStoreService.getUser(userId);
-
-     await this.tempUserStoreService.deleteUser(userId);
 
      await this.tempUserStoreService.getRoomUsers(room.id);
 
