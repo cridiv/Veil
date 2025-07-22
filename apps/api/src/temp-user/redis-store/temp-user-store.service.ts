@@ -6,20 +6,20 @@ import { Cache } from '@nestjs/cache-manager';
 export class TempUserStoreService {
     constructor(@Inject(CACHE_MANAGER) private cacheManager: Cache) {}
 
-async setUser(userId: string, userData: any, ttl: number) {
+async setUser(userId: string, userData: any) {
     const key = "temp-user:" + userId;
     const value = JSON.stringify(userData);
-    await this.cacheManager.set(key, value, ttl * 1000);
+    await this.cacheManager.set(key, value);
 
     const roomUsersKey = `room:${userData.roomId}:users`;
     const existingUsers: string[] = (await this.cacheManager.get(roomUsersKey)) || [];
 
     if (!existingUsers.includes(userId)) {
         existingUsers.push(userId);
-        await this.cacheManager.set(roomUsersKey, existingUsers, ttl * 1000);
+        await this.cacheManager.set(roomUsersKey, existingUsers);
         
         const userRoomKey = `user:${userId}:room`;
-        await this.cacheManager.set(userRoomKey, userData.roomId, ttl * 1000);
+        await this.cacheManager.set(userRoomKey, userData.roomId);
     }
 }
 

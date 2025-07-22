@@ -20,18 +20,27 @@ export async function fetchProfile() {
 }
 
 export async function joinRoom(slug: string, username: string) {
-  const response = await fetch(`/user/room/${slug}/users`, {
+  const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/user/room/${slug}/users`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({ username }),
   });
+
+  if (!response.ok) {
+    const text = await response.text();
+    console.error('Join room error response:', text);
+    throw new Error('Failed to join room');
+  }
+
   return response.json();
 }
 
 export async function setTempUser(username: string, roomId: string, ttl = 3600) {
-  const response = await fetch(`/api/user/temp-user`, {
+    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
+  if (!backendUrl) throw new Error('Backend URL not set');
+  const response = await fetch(`${backendUrl}/user/temp-user`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

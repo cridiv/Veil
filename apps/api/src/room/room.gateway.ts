@@ -71,7 +71,7 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
     await this.tempUserStoreService.setUser(userId, {
       username,
       roomId: room.id,
-    }, 3600);
+    });
 
     this.socketUserMap.set(client.id, { userId, roomId: room.id });
 

@@ -31,7 +31,7 @@ export class TempUserService {
      await this.tempUserStoreService.setUser(userId, {
       username: username,
       roomId: room.id
-     }, 3600);
+     });
 
      await this.tempUserStoreService.getUser(userId);
 

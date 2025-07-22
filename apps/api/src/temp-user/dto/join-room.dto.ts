@@ -11,13 +11,5 @@ export class JoinRoomDto {
       message: 'Username cannot contain HTML characters (<, >, ", \', &)',
     })
     username: string;
-
-    @IsUUID()
-    @IsNotEmpty()
-    roomId: string;
-
-    @IsUUID()
-    @IsNotEmpty()
-    ttl: number;
 }
 

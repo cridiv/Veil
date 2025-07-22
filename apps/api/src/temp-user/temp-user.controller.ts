@@ -2,6 +2,7 @@ import { Controller, Post, Body, Param, Get, Delete, BadRequestException } from 
 import { JoinRoomDto } from './dto/join-room.dto';
 import { TempUserService } from './temp-user.service';
 import { TempUserStoreService } from './redis-store/temp-user-store.service';
+import { SetTempUserDto } from './dto/set-temp-user.dto';
 
 @Controller('user')
 export class TempUserController {
@@ -9,24 +10,19 @@ export class TempUserController {
                 private readonly tempUserStoreService: TempUserStoreService
     ) {}
     
-    @Post('room/:slug/users')
-    async joinRoom(
-        @Param('slug') slug: string,
-        @Body() joinRoomDto: JoinRoomDto
-    ) {
-            if (!slug) {
-    throw new BadRequestException('Room slug is required');
-  }
-           return this.tempUserService.joinRoom(slug, joinRoomDto.username);
-          }
+ @Post('room/:slug/users')
+async joinRoom(@Param('slug') slug: string, @Body() joinRoomDto: JoinRoomDto) {
+  return this.tempUserService.joinRoom(slug, joinRoomDto.username);
+}
 
-    @Post('temp-user')
-    async setUser(
-        @Body()  joinRoomDto: JoinRoomDto
-    ) {
-        const result = await this.tempUserStoreService.setUser(joinRoomDto.username, joinRoomDto.roomId, joinRoomDto.ttl);
-        return result
-    }
+@Post('temp-user')
+async setUser(@Body() setTempUserDto: SetTempUserDto) {
+  const result = await this.tempUserStoreService.setUser(
+    setTempUserDto.username,
+    setTempUserDto.roomId
+  );
+  return result;
+}
 
     @Get('room/:userId')
     async getUser(

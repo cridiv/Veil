@@ -1,131 +1,296 @@
-"use client";
+'use client';
 
-import React, { useState } from "react";
-import GoogleIcon from "../svg/GoogleIcon";
-import TwitterIcon from "../svg/TwitterIcon";
-import JoinIcon from "../svg/JoinIcon";
-import { useRouter } from "next/navigation";
-import { joinRoom, setTempUser } from "../lib/api";
+import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { User, Users, ArrowRight, Check, AlertCircle } from 'lucide-react';
 
+export const LoadingSpinner = () => (
+  <svg
+    className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+    xmlns="http://www.w3.org/2000/svg"
+    fill="none"
+    viewBox="0 0 24 24"
+  >
+    <circle
+      className="opacity-25"
+      cx="12"
+      cy="12"
+      r="10"
+      stroke="currentColor"
+      strokeWidth="4"
+    ></circle>
+    <path
+      className="opacity-75"
+      fill="currentColor"
+      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+    ></path>
+  </svg>
+);
+
+// Mock SVG components - replace with your actual imports
+const GoogleIcon = () => (
+  <svg className="w-5 h-5" viewBox="0 0 24 24">
+    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+  </svg>
+);
+
+const TwitterIcon = () => (
+  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+  </svg>
+);
+
+const JoinIcon = () => (
+  <ArrowRight className="w-4 h-4" />
+);
 
 const GetStarted = () => {
-  const [userName, setUserName] = useState("");
-  const [roomCode, setRoomCode] = useState("");
-  const [error, setError] = useState("");
+  const [userName, setUserName] = useState('');
+  const [slug, setSlug] = useState('');
+  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  const [slug, setSlug] = useState("");
-  const [username, setUsername] = useState("");
-  const [joining, setJoining] = useState(false);
+  // Mock functions - replace with your actual imports
+  const joinRoom = async (slug: string, userName: string) => {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve({
+          user: { username: userName, roomId: slug },
+          token: 'mock-token'
+        });
+      }, 1500);
+    });
+  };
+
+  const setTempUser = async (username: string, roomId: string) => {
+    return Promise.resolve();
+  };
 
   const handleAuthGoogle = () => {
-    console.log("Google authentication initiated");
-    window.location.href = 'http://localhost:5000/auth/google'
-    router.push("/client-handler");
+    window.location.href = 'http://localhost:5000/auth/google';
+    router.push('/client-handler');
   };
 
   const handleAuthTwitter = () => {
-    console.log("Twitter authentication initiated");
-    window.location.href = 'http://localhost:5000/auth/twitter'
-    // Handle Twitter authentication logic here
-    router.push("/client-handler");
+    window.location.href = 'http://localhost:5000/auth/twitter';
+    router.push('/client-handler');
+  };
+
+  const handleJoinRoom = async () => {
+    if (!userName.trim() || !slug.trim()) {
+      setError('Please enter both your name and room code.');
+      return;
+    }
+
+    try {
+      setError('');
+      setLoading(true);
+
+      const response = await joinRoom(slug, userName) as any;
+
+      if (!response || !response.user || !response.user.roomId) {
+        throw new Error('Invalid response from server');
+      }
+
+      const { token, user } = response;
+
+      await setTempUser(user.username, user.roomId);
+      console.log('Joining with:', { slug, userName });
+
+      if (token) {
+        localStorage.setItem('auth_token', token);
+      }
+
+      router.push(`/room/${user.roomId}`);
+    } catch (err: any) {
+      console.error('Join room failed:', err);
+      setError('Failed to join room. Check the room code and try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div className="min-h-screen bg-base-100 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-7xl mx-auto">
-        <h1 className="text-4xl font-bold text-center mb-12">
-          Get Started with Veil
-        </h1>
+    <div className="min-h-screen bg-gray-50 py-8 px-4">
+      <div className="max-w-6xl mx-auto">
+        {/* Header */}
+        <div className="text-center mb-12">
+          <h1 className="text-3xl font-semibold text-gray-900 mb-3">
+            Get Started with Veil
+          </h1>
+          <p className="text-gray-600 text-lg">
+            Join a room or host your own interactive polling session
+          </p>
+        </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {/* Join as participant column */}
-          <div className="bg-purple-600 rounded-lg shadow-xl p-8 flex flex-col h-full">
-            <h2 className="text-2xl font-bold mb-2">Join as a participant</h2>
-            <small className="text-base-content/70 mb-6 block">
-              No account needed
-            </small>
-
-            <div className="form-control w-full mb-6">
-              <label className="label">
-                <span className="label-text">Room Code</span>
-              </label>
-              <div className="relative w-full">
-                <input
-                  type="text"
-                  placeholder="Enter room code"
-                  className="input bg-white text-black border-[2px] rounded-full border-white input-bordered w-full pr-24 focus:input-primary focus:z-0"
-                />
-                {/* add a spinning loading animation when user clicks join */}
-                <button
-                  disabled={joining}
-                  className="cursor-pointer absolute right-1 top-1/2 -translate-y-1/2 z-10 bg-[#af1aff] text-white px-4 py-1.5 rounded-full flex items-center gap-1 hover:bg-[#9615e3] transition-colors border-none shadow-none outline-none"
-                  style={{
-                    transform: "translateY(0%)",
-                    touchAction: "manipulation",
-                  }}
-                  onClick={(e) => e.currentTarget.blur()}
-                >
-                  Join
-                  <JoinIcon />
-                </button>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-4xl mx-auto">
+          {/* Join as participant */}
+          <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100 transition-all duration-300 hover:shadow-md">
+            {/* Card header */}
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg shadow-purple-500/25">
+                <User className="w-6 h-6 text-white" />
               </div>
-              <span className="text-red-600 text-sm mt-2">{error}</span>
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900">
+                  Join as participant
+                </h2>
+                <p className="text-sm text-gray-500">No account needed</p>
+              </div>
             </div>
 
-            <div className="mt-auto bg-base-300 p-4 rounded-lg">
-              <h3 className="font-semibold mb-2">What to expect</h3>
-              <ul className="list-disc pl-5 space-y-1 text-sm">
-                <li>Interactive polling experience</li>
-                <li>Real-time responses</li>
-                <li>Anonymous participation</li>
-                <li>Multiple question formats</li>
+            {/* Form fields */}
+            <div className="space-y-5 mb-8">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Your Name
+                </label>
+                <input
+                  type="text"
+                  placeholder="Enter your name"
+                  value={userName}
+                  onChange={(e) => setUserName(e.target.value)}
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all duration-200 hover:bg-gray-100"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Room Code
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="Enter room code"
+                    value={slug}
+                    onChange={(e) => setSlug(e.target.value)}
+                    className="w-full px-4 py-3 pr-24 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all duration-200 hover:bg-gray-100"
+                  />
+                  <button
+                    onClick={handleJoinRoom}
+                    disabled={loading}
+                    className="absolute right-2 top-2 bg-gradient-to-r from-purple-500 to-purple-600 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 transition-all duration-200 hover:from-purple-600 hover:to-purple-700 hover:shadow-lg hover:shadow-purple-500/25 disabled:opacity-70 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-purple-500/30"
+                  >
+                    {loading ? (
+                      <>
+                        <LoadingSpinner />
+                        <span className="text-sm">Joining...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span className="text-sm">Join</span>
+                        <JoinIcon />
+                      </>
+                    )}
+                  </button>
+                </div>
+                {error && (
+                  <div className="flex items-center gap-2 mt-2 text-red-600 text-sm">
+                    <AlertCircle className="w-4 h-4" />
+                    {error}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Features list */}
+            <div className="bg-gray-50 rounded-xl p-5">
+              <h3 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
+                <Check className="w-4 h-4 text-green-500" />
+                What to expect
+              </h3>
+              <ul className="space-y-2 text-sm text-gray-600">
+                <li className="flex items-center gap-2">
+                  <div className="w-1 h-1 bg-gray-400 rounded-full"></div>
+                  Interactive polling experience
+                </li>
+                <li className="flex items-center gap-2">
+                  <div className="w-1 h-1 bg-gray-400 rounded-full"></div>
+                  Real-time responses
+                </li>
+                <li className="flex items-center gap-2">
+                  <div className="w-1 h-1 bg-gray-400 rounded-full"></div>
+                  Anonymous participation
+                </li>
+                <li className="flex items-center gap-2">
+                  <div className="w-1 h-1 bg-gray-400 rounded-full"></div>
+                  Multiple question formats
+                </li>
               </ul>
             </div>
           </div>
 
-          {/* Host a room column */}
-          <div className="bg-white text-black rounded-lg shadow-xl p-8 flex flex-col h-full">
-            <h2 className="text-2xl font-bold mb-2">Host a room</h2>
-            <p className="text-base-content/70 mb-6">
-              Sign in to host a room and create polls
-            </p>
+          {/* Host a room */}
+          <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100 transition-all duration-300 hover:shadow-md">
+            {/* Card header */}
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/25">
+                <Users className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900">Host a room</h2>
+                <p className="text-sm text-gray-500">
+                  Sign in to create and manage polls
+                </p>
+              </div>
+            </div>
 
-            <div className="space-y-4">
+            {/* Auth buttons */}
+            <div className="space-y-4 mb-8">
               <button
                 onClick={handleAuthGoogle}
-                className="btn bg-white text-black border-[#e5e5e5] w-full rounded-full"
+                className="w-full flex items-center justify-center gap-3 px-6 py-3 bg-white border border-gray-200 rounded-xl text-gray-700 font-medium transition-all duration-200 hover:bg-gray-50 hover:border-gray-300 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-500/20"
               >
                 <GoogleIcon />
-                Sign in with Google
+                Continue with Google
               </button>
 
               <button
                 onClick={handleAuthTwitter}
-                className="btn bg-black text-white border-black w-full rounded-full"
+                className="w-full flex items-center justify-center gap-3 px-6 py-3 bg-black text-white rounded-xl font-medium transition-all duration-200 hover:bg-gray-800 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-500/20"
               >
                 <TwitterIcon />
-                Sign in with X
+                Continue with X
               </button>
             </div>
 
-            <div className="mt-auto bg-base-300 p-4 rounded-lg">
-              <h3 className="font-semibold mb-2">Host benefits</h3>
-              <ul className="list-disc pl-5 space-y-1 text-sm">
-                <li>Create custom polls</li>
-                <li>View detailed analytics</li>
-                <li>Export results</li>
-                <li>Moderate participant responses</li>
+            {/* Host benefits */}
+            <div className="bg-blue-50 rounded-xl p-5">
+              <h3 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
+                <Check className="w-4 h-4 text-blue-500" />
+                Host benefits
+              </h3>
+              <ul className="space-y-2 text-sm text-gray-600">
+                <li className="flex items-center gap-2">
+                  <div className="w-1 h-1 bg-blue-400 rounded-full"></div>
+                  Create custom polls
+                </li>
+                <li className="flex items-center gap-2">
+                  <div className="w-1 h-1 bg-blue-400 rounded-full"></div>
+                  View detailed analytics
+                </li>
+                <li className="flex items-center gap-2">
+                  <div className="w-1 h-1 bg-blue-400 rounded-full"></div>
+                  Export results
+                </li>
+                <li className="flex items-center gap-2">
+                  <div className="w-1 h-1 bg-blue-400 rounded-full"></div>
+                  Moderate responses
+                </li>
               </ul>
             </div>
           </div>
         </div>
 
-        <div className="mt-12 text-center">
-          <p className="text-base-content/70">
+        {/* Footer */}
+        <div className="text-center mt-12">
+          <p className="text-gray-500">
             Need help?{" "}
-            <a href="#" className="text-primary hover:underline">
+            <a href="#" className="text-purple-600 hover:text-purple-700 font-medium transition-colors">
               Contact support
             </a>
           </p>
