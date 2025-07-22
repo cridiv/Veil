@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import React, { useState } from "react";
-import { useRouter } from "next/navigation";
-import { User, Users, ArrowRight, Check, AlertCircle } from "lucide-react";
+import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { User, Users, ArrowRight, Check, AlertCircle } from 'lucide-react';
 
 export const LoadingSpinner = () => (
   <svg
@@ -30,100 +30,109 @@ export const LoadingSpinner = () => (
 // Mock SVG components - replace with your actual imports
 const GoogleIcon = () => (
   <svg className="w-5 h-5" viewBox="0 0 24 24">
-    <path
-      fill="#4285F4"
-      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-    />
-    <path
-      fill="#34A853"
-      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-    />
-    <path
-      fill="#FBBC05"
-      d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-    />
-    <path
-      fill="#EA4335"
-      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-    />
+    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
   </svg>
 );
 
 const TwitterIcon = () => (
   <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
   </svg>
 );
 
-const JoinIcon = () => <ArrowRight className="w-4 h-4" />;
+const JoinIcon = () => (
+  <ArrowRight className="w-4 h-4" />
+);
 
 const GetStarted = () => {
-  const [userName, setUserName] = useState("");
-  const [slug, setSlug] = useState("");
-  const [error, setError] = useState("");
+  const [userName, setUserName] = useState('');
+  const [slug, setSlug] = useState('');
+  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  // Mock functions - replace with your actual imports
+  // --- JOIN ROOM (participant, no auth header needed) ---
   const joinRoom = async (slug: string, userName: string) => {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve({
-          user: { username: userName, roomId: slug },
-          token: "mock-token",
-        });
-      }, 1500);
+    const backend = process.env.NEXT_PUBLIC_BACKEND_URL;
+    if (!backend) throw new Error('Backend URL not configured');
+
+    const res = await fetch(`${backend}/user/room/${slug}/users`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: userName }),
     });
+
+    if (!res.ok) {
+      let msg = 'Unable to join room';
+      try {
+        const err = await res.json();
+        if (err?.message) msg = err.message;
+      } catch {}
+      throw new Error(msg);
+    }
+
+    return res.json();
   };
 
-  const setTempUser = async (username: string, roomId: string) => {
-    return Promise.resolve();
-  };
+  // optional future server-side temp storage (currently noop)
+  const setTempUser = async (_username: string, _roomId: string) => Promise.resolve();
 
+  // auth flows for moderator
   const handleAuthGoogle = () => {
-    window.location.href = "http://localhost:5000/auth/google";
-    router.push("/client-handler");
+    window.location.href = 'http://localhost:5000/auth/google';
+    router.push('/client-handler');
   };
-
   const handleAuthTwitter = () => {
-    window.location.href = "http://localhost:5000/auth/twitter";
-    router.push("/client-handler");
+    window.location.href = 'http://localhost:5000/auth/twitter';
+    router.push('/client-handler');
   };
 
   const handleJoinRoom = async () => {
-    if (!userName.trim() || !slug.trim()) {
-      setError("Please enter both your name and room code.");
+    const cleanName = userName.trim();
+    const cleanSlug = slug.trim().toLowerCase();
+
+    if (!cleanName || !cleanSlug) {
+      setError('Please enter both your name and room code.');
       return;
     }
 
+    setError('');
+    setLoading(true);
+
     try {
-      setError("");
-      setLoading(true);
+      const response = await joinRoom(cleanSlug, cleanName);
 
-      const response = (await joinRoom(slug, userName)) as any;
-
-      if (!response || !response.user || !response.user.roomId) {
-        throw new Error("Invalid response from server");
+      // expected: { user: { id, username, roomId }, token }
+      if (!response?.user?.roomId) {
+        throw new Error('Invalid response from server.');
       }
 
       const { token, user } = response;
 
-      await setTempUser(user.username, user.roomId);
-      console.log("Joining with:", { slug, userName });
-
+      // persist minimal participant session
+      localStorage.setItem('temp_username', user.username);
+      localStorage.setItem('temp_room_id', user.roomId);
       if (token) {
-        localStorage.setItem("auth_token", token);
+        // this lets participant hit protected endpoints later if needed
+        localStorage.setItem('auth_token', token);
       }
+
+      await setTempUser(user.username, user.roomId); // no-op for now
+
+      console.log('Joining room:', { cleanSlug, cleanName, user });
 
       router.push(`/room/${user.roomId}`);
     } catch (err: any) {
-      console.error("Join room failed:", err);
-      setError("Failed to join room. Check the room code and try again.");
+      console.error('Join room failed:', err);
+      setError(err?.message || 'Failed to join room. Check the room code and try again.');
     } finally {
       setLoading(false);
     }
   };
-
+  
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4">
       <div className="max-w-6xl mx-auto">
@@ -183,7 +192,7 @@ const GetStarted = () => {
                   <button
                     onClick={handleJoinRoom}
                     disabled={loading}
-                    className="absolute cursor-pointer right-2 top-2 bg-gradient-to-r from-purple-500 to-purple-600 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 transition-all duration-200 hover:from-purple-600 hover:to-purple-700 hover:shadow-lg hover:shadow-purple-500/25 disabled:opacity-70 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-purple-500/30"
+                    className="absolute right-2 top-2 bg-gradient-to-r from-purple-500 to-purple-600 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 transition-all duration-200 hover:from-purple-600 hover:to-purple-700 hover:shadow-lg hover:shadow-purple-500/25 disabled:opacity-70 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-purple-500/30"
                   >
                     {loading ? (
                       <>
@@ -242,9 +251,7 @@ const GetStarted = () => {
                 <Users className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h2 className="text-xl font-semibold text-gray-900">
-                  Host a room
-                </h2>
+                <h2 className="text-xl font-semibold text-gray-900">Host a room</h2>
                 <p className="text-sm text-gray-500">
                   Sign in to create and manage polls
                 </p>
@@ -255,7 +262,7 @@ const GetStarted = () => {
             <div className="space-y-4 mb-8">
               <button
                 onClick={handleAuthGoogle}
-                className="w-full cursor-pointer flex items-center justify-center gap-3 px-6 py-3 bg-white border border-gray-200 rounded-xl text-gray-700 font-medium transition-all duration-200 hover:bg-gray-50 hover:border-gray-300 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-500/20"
+                className="w-full flex items-center justify-center gap-3 px-6 py-3 bg-white border border-gray-200 rounded-xl text-gray-700 font-medium transition-all duration-200 hover:bg-gray-50 hover:border-gray-300 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-500/20"
               >
                 <GoogleIcon />
                 Continue with Google
@@ -263,7 +270,7 @@ const GetStarted = () => {
 
               <button
                 onClick={handleAuthTwitter}
-                className="w-full flex cursor-pointer items-center justify-center gap-3 px-6 py-3 bg-black text-white rounded-xl font-medium transition-all duration-200 hover:bg-gray-800 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-500/20"
+                className="w-full flex items-center justify-center gap-3 px-6 py-3 bg-black text-white rounded-xl font-medium transition-all duration-200 hover:bg-gray-800 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-500/20"
               >
                 <TwitterIcon />
                 Continue with X
@@ -302,10 +309,7 @@ const GetStarted = () => {
         <div className="text-center mt-12">
           <p className="text-gray-500">
             Need help?{" "}
-            <a
-              href="#"
-              className="text-purple-600 hover:text-purple-700 font-medium transition-colors"
-            >
+            <a href="#" className="text-purple-600 hover:text-purple-700 font-medium transition-colors">
               Contact support
             </a>
           </p>
