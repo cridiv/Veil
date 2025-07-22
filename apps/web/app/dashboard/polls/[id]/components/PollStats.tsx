@@ -1,5 +1,6 @@
 "use client";
-import React from "react";
+
+import React, { useEffect, useState } from "react";
 import { Clock, Users, BarChart2, Calendar } from "lucide-react";
 import { Poll } from "../../../../types/poll";
 
@@ -8,15 +9,8 @@ interface PollStatsProps {
 }
 
 const PollStats: React.FC<PollStatsProps> = ({ poll }) => {
-  const formatDate = (date: Date) => {
-    return date.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
-  };
-
-  const getStatusColor = (status: string) => {
+  const [activeUsers, setActiveUsers] = useState<number>(0);
+    const getStatusColor = (status: string) => {
     switch (status) {
       case "active":
         return "bg-green-100 text-green-800";
@@ -29,6 +23,36 @@ const PollStats: React.FC<PollStatsProps> = ({ poll }) => {
     }
   };
 
+  useEffect(() => {
+  const fetchActiveUsers = async () => {
+    try {
+      const token = localStorage.getItem("auth_token");
+      if (!token) return;
+      
+      const roomRes = await fetch(`http://localhost:5000/rooms/${poll.id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!roomRes.ok) throw new Error("Failed to fetch room by slug");
+      const room = await roomRes.json();
+
+      const userCountRes = await fetch(`http://localhost:5000/user/room/${room.id}/no`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!userCountRes.ok) throw new Error("Failed to fetch user count");
+      const count = await userCountRes.json();
+
+      setActiveUsers(typeof count === "number" ? count : 0);
+    } catch (err) {
+      console.error("Error getting active user count:", err);
+      setActiveUsers(0);
+    }
+  };
+
+  fetchActiveUsers();
+}, [poll.id]);
+
   return (
     <div className="bg-white rounded-lg shadow p-6">
       <h2 className="text-xl text-black font-semibold mb-4">Poll Stats</h2>
@@ -40,9 +64,6 @@ const PollStats: React.FC<PollStatsProps> = ({ poll }) => {
           </div>
           <div>
             <div className="text-sm text-gray-500 mb-1">Poll Duration</div>
-            <div className="font-medium text-black">
-              {formatDate(poll.startDate)} - {formatDate(poll.endDate)}
-            </div>
           </div>
         </div>
 
@@ -70,7 +91,7 @@ const PollStats: React.FC<PollStatsProps> = ({ poll }) => {
           </div>
           <div>
             <div className="text-sm text-gray-500 mb-1">Responses</div>
-            <div className="font-medium text-black">{poll.responses}</div>
+            <div className="font-medium text-black">{activeUsers}</div>
           </div>
         </div>
 
@@ -83,7 +104,7 @@ const PollStats: React.FC<PollStatsProps> = ({ poll }) => {
             <div>
               <div className="flex justify-between text-sm">
                 <span className="text-gray-500">Active Users</span>
-                <span className="font-medium text-black">0</span>
+                <span className="font-medium text-black">{activeUsers}</span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2.5 mt-1">
                 <div className="bg-purple-600 h-2.5 rounded-full w-0"></div>

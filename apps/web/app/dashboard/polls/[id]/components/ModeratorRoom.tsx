@@ -122,8 +122,8 @@ const ModeratorRoom: React.FC<ModeratorRoomProps> = ({
       const newQuestion: AudienceQuestion = {
         id: `new-${Date.now()}`,
         questionId: question.id,
-        text: randomQuestion,
-        authorName: randomName,
+        text: randomQuestion ?? "",
+        authorName: randomName ?? "Anonymous",
         timestamp: new Date(),
         upvotes: 0,
         isAnswered: false,

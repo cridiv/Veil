@@ -45,7 +45,7 @@ const PollHeader: React.FC<PollHeaderProps> = ({
     setShowShareOptions(false);
   };
 
-  const pollUrl = `${window.location.origin}/room/${poll.code}`;
+  const pollUrl = `${window.location.origin}/room/${poll.slug}`;
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(pollUrl);
@@ -100,7 +100,7 @@ const PollHeader: React.FC<PollHeaderProps> = ({
             const url = URL.createObjectURL(blob);
             const link = document.createElement("a");
             link.href = url;
-            link.download = `room-${poll.code}-qr-code.png`;
+            link.download = `room-${poll.slug}-qr-code.png`;
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
@@ -141,7 +141,7 @@ const PollHeader: React.FC<PollHeaderProps> = ({
               <span className="ml-2">{poll.id}</span>
               <span className="mx-2">•</span>
               <span className="font-medium">Code:</span>
-              <span className="ml-2">{poll.code}</span>
+              <span className="ml-2">{poll.id}</span>
             </div>
           </div>
         </div>
@@ -186,10 +186,10 @@ const PollHeader: React.FC<PollHeaderProps> = ({
                   <div className="text-sm text-gray-500 mb-2">Poll Code</div>
                   <div className="flex items-center space-x-3">
                     <div className="text-xl font-bold tracking-wide">
-                      {poll.code}
+                      {poll.slug}
                     </div>
                     <button
-                      onClick={() => navigator.clipboard.writeText(poll.code)}
+                      onClick={() => navigator.clipboard.writeText(poll.slug)}
                       className="p-1 cursor-pointer hover:bg-gray-100 rounded"
                     >
                       <Copy size={16} className="text-gray-600" />

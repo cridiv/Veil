@@ -39,7 +39,7 @@ async setUser(@Body() setTempUserDto: SetTempUserDto) {
         const logout = await this.tempUserStoreService.deleteUser(userId);
         return logout
     }
-
+    
     @Get('room/:roomId/list')
     async getRoomUsers(
         @Param('roomId') roomId: string

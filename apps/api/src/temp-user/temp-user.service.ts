@@ -50,6 +50,8 @@ export class TempUserService {
             roomId: room.id,
         },
         token,
+        roomUsers,
+        roomUserCount
     };
     }
 

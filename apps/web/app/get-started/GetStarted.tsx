@@ -77,7 +77,6 @@ const GetStarted = () => {
     return res.json();
   };
 
-  // optional future server-side temp storage (currently noop)
   const setTempUser = async (_username: string, _roomId: string) => Promise.resolve();
 
   // auth flows for moderator
@@ -105,14 +104,12 @@ const GetStarted = () => {
     try {
       const response = await joinRoom(cleanSlug, cleanName);
 
-      // expected: { user: { id, username, roomId }, token }
       if (!response?.user?.roomId) {
         throw new Error('Invalid response from server.');
       }
 
       const { token, user } = response;
 
-      // persist minimal participant session
       localStorage.setItem('temp_username', user.username);
       localStorage.setItem('temp_room_id', user.roomId);
       if (token) {
@@ -132,7 +129,7 @@ const GetStarted = () => {
       setLoading(false);
     }
   };
-  
+
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4">
       <div className="max-w-6xl mx-auto">

@@ -14,6 +14,7 @@ const PollDetailPage = () => {
   const params = useParams();
   const router = useRouter();
   const pollId = params.id as string;
+  const slug = params.slug as string;
 
   const [isLoading, setIsLoading] = useState(true);
   const [poll, setPoll] = useState<Poll | null>(null);
@@ -35,11 +36,9 @@ const PollDetailPage = () => {
           const mockPoll: Poll = {
             id: pollId,
             name: "Product Feedback Session",
-            code: "ABC123",
+            slug: slug,
             status: "active",
             responses: 24,
-            startDate: new Date("2025-07-18"),
-            endDate: new Date("2025-07-25"),
             createdAt: new Date("2025-07-15"),
           };
 

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { CreateRoomDto } from './dto/create-room.dto';
 import { PrismaService } from '../prisma/prisma.service';
 @Injectable()
@@ -26,10 +26,14 @@ export class RoomService {
     }
 
     async findRoomsByUserId(userId: string) {
+        try{
   return this.prisma.room.findMany({
     where: { moderatorId: userId },
     orderBy: { createdAt: 'desc' }
   });
-}
+}catch (err) {
+    console.error('Error fetching rooms:', err);
+    throw new InternalServerErrorException('Database temporarily unavailable');
+  }}
     
 }

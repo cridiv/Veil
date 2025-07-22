@@ -6,7 +6,7 @@ const RoomPage = () => {
 
   useEffect(() => {
     // Access localStorage only after component mounts (client-side)
-    const storedName = localStorage.getItem("tempUserName");
+    const storedName = localStorage.getItem("temp_username");
     setUserName(storedName);
 
     if (!storedName) {

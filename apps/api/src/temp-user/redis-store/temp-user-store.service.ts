@@ -26,6 +26,7 @@ async setUser(userId: string, userData: any) {
     async getUser(userId: string) {
         const key = "temp-user:" + userId;
         const value = await this.cacheManager.get(key);
+        
 
         if (value) {
             return JSON.parse(value as string);
@@ -53,6 +54,7 @@ async deleteUser(userId: string) {
         
         await this.cacheManager.del(userRoomKey);
     }
+
     
     return true;
 }
@@ -60,7 +62,7 @@ async deleteUser(userId: string) {
 async getRoomUsers(roomId: string) {
     const roomUsersKey = `room:${roomId}:users`;
     const userIds: string[] = (await this.cacheManager.get(roomUsersKey)) || [];
-    
+
     const usersData = await Promise.all(
         userIds.map(async (userId) => {
             const userData = await this.getUser(userId);
