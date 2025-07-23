@@ -25,6 +25,10 @@ export class RoomService {
         return this.prisma.room.findUnique({ where: { slug }, include: { moderator: true } });
     }
 
+    async findRoomById(id: string): Promise<any> {
+  return this.prisma.room.findUnique({ where: { id }, include: { moderator: true } });
+}
+
     async findRoomsByUserId(userId: string) {
         try{
   return this.prisma.room.findMany({
