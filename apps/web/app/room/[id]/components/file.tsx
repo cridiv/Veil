@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { useParams } from "next/navigation";
-import { socket } from "../../lib/socket";
 import {
   SendHorizonal,
   MessageSquare,
@@ -37,19 +36,14 @@ interface Poll {
   timeLeft: string;
 }
 
-interface Props {
-  roomId: string;
-}
-
-const RoomClient = () => {
-  const params = useParams();
-  const roomId = params?.id as string;
-  const [isRoomLoading, setIsRoomLoading] = useState(true);
+const RoomPage = () => {
+  const { slug } = useParams();
+  const [roomId, setRoomId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("qa");
   const [newQuestion, setNewQuestion] = useState("");
   const [questions, setQuestions] = useState<Question[]>([]);
   const [polls, setPolls] = useState<Poll[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoaading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToTop = () => {
@@ -66,34 +60,37 @@ const RoomClient = () => {
         const token = localStorage.getItem("auth_token");
         if (!token) return;
 
-        const res = await fetch(`http://localhost:5000/rooms/${roomId}`, {
+        const res = await fetch(`http://localhost:5000/rooms/slug/${slug}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 
         if (!res.ok) throw new Error("Failed to fetch room");
 
         const room = await res.json();
-        setIsRoomLoading(false);
+        setRoomId(room.id);
       } catch (err) {
         console.error("Error fetching room:", err);
       }
     };
 
     fetchRoom();
-  }, [roomId]);
+  }, [slug]);
 
   useEffect(() => {
     if (!roomId) return;
 
-    const userId = localStorage.getItem("temp_userId") ?? "guest";
-    socket.emit("joinRoom", { roomId, userId });
+    const fetchQuestions = async () => {
+      const token = localStorage.getItem("auth_token");
+      const res = await fetch(
+        `http://localhost:5000/rooms/${roomId}/questions`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
 
-    socket.emit("getQuestions", roomId);
-    const handleNewQuestion = (question: Question) => {
-      setQuestions((prev) => [question, ...prev]);
+      const data = await res.json();
+      setQuestions(data);
     };
-
-    socket.on("newQuestion", handleNewQuestion);
 
     const fetchPolls = async () => {
       const token = localStorage.getItem("auth_token");
@@ -104,11 +101,9 @@ const RoomClient = () => {
       const data = await res.json();
       setPolls(data);
     };
-    fetchPolls();
 
-    return () => {
-      socket.off("newQuestion", handleNewQuestion);
-    };
+    fetchQuestions();
+    fetchPolls();
   }, [roomId]);
 
   const handleImproveAi = async () => {
@@ -228,22 +223,32 @@ const RoomClient = () => {
     }
   };
 
-  const handleSubmitQuestion = () => {
-    if (!newQuestion.trim() || !roomId || isRoomLoading) {
-      console.warn("Missing question or roomId");
-      return;
+  const handleSubmitQuestion = async () => {
+    if (!newQuestion.trim() || !roomId) return;
+
+    const token = localStorage.getItem("auth_token");
+
+    try {
+      const res = await fetch(
+        `http://localhost:5000/rooms/${roomId}/questions`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ question: newQuestion }),
+        }
+      );
+
+      if (!res.ok) throw new Error("Failed to submit question");
+
+      const newQ = await res.json();
+      setQuestions([newQ, ...questions]);
+      setNewQuestion("");
+    } catch (err) {
+      console.error("Failed to submit question:", err);
     }
-
-    const userId = localStorage.getItem("temp_userId");
-    const username = localStorage.getItem("temp_username");
-
-    socket.emit("askQuestion", {
-      roomId,
-      userId: userId ?? "anonymous",
-      question: newQuestion,
-    });
-
-    setNewQuestion("");
   };
 
   const handleLike = async (id: string) => {
@@ -256,7 +261,6 @@ const RoomClient = () => {
       },
     });
 
-    console.log("questions", questions);
     setQuestions(
       questions.map((q) => (q.id === id ? { ...q, likes: q.likes + 1 } : q))
     );
@@ -299,6 +303,8 @@ const RoomClient = () => {
             <div className="flex items-centeS space-x-1">
               {/* <MessageSquare className="w-4 h-4" /> */}
               <span className="text-xl text-black">Product Review Session</span>
+              {/* Room Code */}
+              <p>CSN132 </p>
             </div>
             <div className="flex items-center space-x-1">
               <Users className="w-4 h-4" />
@@ -356,12 +362,11 @@ const RoomClient = () => {
                         }
                       }}
                       placeholder="Ask your question..."
-                      disabled={isRoomLoading}
                       rows={1}
-                      className="flex-1 p-4 pr-24 bg-transparent border-none rounded-2xl focus:outline-none placeholder-gray-500 text-gray-900 resize-none overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="flex-1 p-4 pr-24 bg-transparent border-none rounded-2xl focus:outline-none placeholder-gray-500 text-gray-900 resize-none overflow-hidden"
                       style={{
-                        minHeight: "56px",
-                        maxHeight: "200px",
+                        minHeight: "56px", // Adjust based on your design
+                        maxHeight: "200px", // Prevents it from getting too tall
                       }}
                       onInput={(e) => {
                         const target = e.target as HTMLTextAreaElement;
@@ -371,16 +376,14 @@ const RoomClient = () => {
                     />
 
                     {/* Button container inside input */}
-                    <div className="flex items-center space-x-2 pr-3">
+                    <div className="flex items-center space-x-4 pr-2">
                       {/* Enhance with AI button */}
                       <button
                         onClick={handleImproveAi}
-                        disabled={
-                          isRoomLoading || isLoading || !newQuestion.trim()
-                        }
-                        className="flex cursor-pointer items-center space-x-1 px-3 py-1.5 bg-gradient-to-r from-blue-500 to-purple-600 text-white text-xs font-medium rounded-full hover:from-blue-600 hover:to-purple-700 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed transition-all duration-200 shadow-sm"
+                        disabled={isLoaading || !newQuestion.trim()}
+                        className="flex cursor-pointer w-[70%] h-8 items-center space-x-1 px-3 py-1.5 bg-gradient-to-r from-blue-500 to-purple-600 text-white text-xs font-medium rounded-full hover:from-blue-600 hover:to-purple-700 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed transition-all duration-200 shadow-sm"
                       >
-                        {isLoading ? (
+                        {isLoaading ? (
                           <>
                             <svg
                               className="w-3 h-3 animate-spin"
@@ -420,8 +423,8 @@ const RoomClient = () => {
                       {/* Send button */}
                       <button
                         onClick={handleSubmitQuestion}
-                        disabled={isRoomLoading || !newQuestion.trim()}
-                        className="flex items-center justify-center w-10 h-10 bg-purple-600 text-white rounded-full hover:bg-purple-700 disabled:bg-purple-300 disabled:cursor-not-allowed transition-all duration-200 shadow-sm"
+                        disabled={!newQuestion.trim()}
+                        className="flex items-center cursor-pointer justify-center w-14 h-10 bg-purple-600 text-white rounded-[8px] hover:bg-purple-700 disabled:bg-purple-300 disabled:cursor-not-allowed transition-all duration-200 shadow-sm"
                       >
                         <SendHorizonal className="w-4 h-4" />
                       </button>
@@ -551,4 +554,4 @@ const RoomClient = () => {
   );
 };
 
-export default RoomClient;
+export default RoomPage;
