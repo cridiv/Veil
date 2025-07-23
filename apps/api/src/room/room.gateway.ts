@@ -32,14 +32,14 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
     console.log(`📊 Total clients: ${this.server.sockets.sockets.size}`);
   }
 
- @SubscribeMessage('joinRoom')
-handleJoinRoom(
+  @SubscribeMessage('joinRoom')
+  handleJoinRoom(
   @MessageBody() data: { roomId: string; userId: string; role: 'moderator' | 'user' },
-  @ConnectedSocket() client: Socket,
-) {
+    @ConnectedSocket() client: Socket,
+  ) {
   console.log(`📝 ${data.role} joining room:`, data);
 
-  client.join(data.roomId);
+    client.join(data.roomId);
   client.data.role = data.role;
   client.data.userId = data.userId;
 
@@ -49,7 +49,7 @@ handleJoinRoom(
   });
 
   console.log(`✅ ${data.role} ${data.userId} joined room: ${data.roomId}`);
-}
+  }
 
   @SubscribeMessage('askQuestion')
   handleAskQuestion(
@@ -68,8 +68,8 @@ handleJoinRoom(
     this.server.to(data.roomId).emit('newQuestion', newQuestion);
   }
 
-@SubscribeMessage('replyToQuestion')
-handleReplyToQuestion(
+  @SubscribeMessage('replyToQuestion')
+  handleReplyToQuestion(
   @MessageBody() data: { roomId: string; questionId: string; content: string },
   @ConnectedSocket() client: Socket,
 ) {
@@ -79,16 +79,16 @@ handleReplyToQuestion(
     return;
   }
 
-  const updated = this.questionStore.answerQuestion(
-    data.roomId,
-    data.questionId,
+    const updated = this.questionStore.answerQuestion(
+      data.roomId,
+      data.questionId,
     data.content,
-  );
+    );
 
-  if (updated) {
-    this.server.to(data.roomId).emit('questionReplied', updated);
+    if (updated) {
+      this.server.to(data.roomId).emit('questionReplied', updated);
+    }
   }
-}
 
 @SubscribeMessage('getQuestions')
 handleGetQuestions(
@@ -105,6 +105,8 @@ handleGetQuestions(
   client.emit('questionsList', questions);
 }
 
+
+  // Add the missing event handlers
   @SubscribeMessage('upvoteQuestion')
   handleUpvoteQuestion(
     @MessageBody() data: { roomId: string; questionId: string },

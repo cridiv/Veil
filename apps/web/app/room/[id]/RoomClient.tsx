@@ -227,27 +227,28 @@ const RoomClient = () => {
         );
       }
     } finally {
+      // Reset loading state
       setIsLoading(false);
     }
   };
 
-  const handleSubmitQuestion = () => {
-    if (!newQuestion.trim() || !roomId || isRoomLoading) {
-      console.warn("Missing question or roomId");
-      return;
-    }
+const handleSubmitQuestion = () => {
+  if (!newQuestion.trim() || !roomId || isRoomLoading) {
+    console.warn("Missing question or roomId");
+    return;
+  }
 
     const userId = localStorage.getItem("temp_userId");
-    const username = localStorage.getItem("temp_username");
+  const username = localStorage.getItem("temp_username");
 
-    socket.emit("askQuestion", {
-      roomId,
+  socket.emit("askQuestion", {
+    roomId,
       userId: userId ?? "anonymous",
       question: newQuestion,
-    });
+  });
 
-    setNewQuestion("");
-  };
+  setNewQuestion("");
+};
 
   const handleLike = async (id: string) => {
     const token = localStorage.getItem("auth_token");

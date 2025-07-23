@@ -1,17 +1,19 @@
 "use client";
 import React, { useState } from "react";
-import { Question } from "../../../../types/poll";
+import { Question, Poll } from "../../../../types/poll";
 import AudienceQAManager from "./AudienceQAManager";
 import ModeratorRoom from "./ModeratorRoom";
 import { useWebSocketAudienceQuestions } from "../hooks/useMockAudienceQuestions";
 
 interface AudienceQAManagerContainerProps {
-  question: Question;
+  poll: Poll;
+  questions: Question[];
   onClose?: () => void;
 }
 
 const AudienceQAManagerContainer: React.FC<AudienceQAManagerContainerProps> = ({
-  question,
+  poll,
+  questions,
   onClose,
 }) => {
   const [showModeratorRoom, setShowModeratorRoom] = useState(true);
@@ -24,7 +26,7 @@ const AudienceQAManagerContainer: React.FC<AudienceQAManagerContainerProps> = ({
     handleDelete,
     handleToggleAnswered,
     handleToggleHidden,
-  } = useWebSocketAudienceQuestions(question.id);
+  } = useWebSocketAudienceQuestions(poll.id);
 
   if (loading) {
     return (
@@ -47,9 +49,13 @@ const AudienceQAManagerContainer: React.FC<AudienceQAManagerContainerProps> = ({
   };
 
   if (showModeratorRoom) {
+    if (!questions[0]) {
+      // Optionally, render a fallback UI or null if no question is available
+      return null;
+    }
     return (
       <ModeratorRoom
-        question={question}
+        question={questions[0]}
         audienceQuestions={audienceQuestions}
         onReply={handleReply}
         onDelete={handleDelete}
@@ -61,9 +67,12 @@ const AudienceQAManagerContainer: React.FC<AudienceQAManagerContainerProps> = ({
     );
   }
 
+  if (!questions[0]) {
+       return null;
+  }
   return (
     <AudienceQAManager
-      question={question}
+      question={questions[0]}
       audienceQuestions={audienceQuestions}
       onReply={handleReply}
       onDelete={handleDelete}
