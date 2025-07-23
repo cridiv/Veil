@@ -87,4 +87,44 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const questions = this.questionStore.getQuestions(roomId);
     client.emit('questionsList', questions);
   }
+
+    @SubscribeMessage('upvoteQuestion')
+  handleUpvoteQuestion(
+    @MessageBody() data: { roomId: string; questionId: string },
+  ) {
+    const updated = this.questionStore.upvoteQuestion(data.roomId, data.questionId);
+    if (updated) {
+      this.server.to(data.roomId).emit('questionUpdated', updated);
+    }
+  }
+
+  @SubscribeMessage('toggleAnswered')
+  handleToggleAnswered(
+    @MessageBody() data: { roomId: string; questionId: string },
+  ) {
+    const updated = this.questionStore.toggleAnswered(data.roomId, data.questionId);
+    if (updated) {
+      this.server.to(data.roomId).emit('questionUpdated', updated);
+    }
+  }
+
+  @SubscribeMessage('toggleHidden')
+  handleToggleHidden(
+    @MessageBody() data: { roomId: string; questionId: string },
+  ) {
+    const updated = this.questionStore.toggleHidden(data.roomId, data.questionId);
+    if (updated) {
+      this.server.to(data.roomId).emit('questionUpdated', updated);
+    }
+  }
+
+  @SubscribeMessage('deleteQuestion')
+  handleDeleteQuestion(
+    @MessageBody() data: { roomId: string; questionId: string },
+  ) {
+    const deleted = this.questionStore.deleteQuestion(data.roomId, data.questionId);
+    if (deleted) {
+      this.server.to(data.roomId).emit('questionDeleted', data.questionId);
+    }
+  }
 }
