@@ -2,24 +2,29 @@
 import React, { useState, useRef, useEffect } from "react";
 import { X, Plus, PlusCircle } from "lucide-react";
 import { Question, QuestionType } from "../../../../types/poll";
+import { socket } from "../../../../lib/socket";
 
 interface AddQuestionPanelProps {
-  onAdd: (question: Omit<Question, "id" | "pollId" | "order">) => void;
+  roomId: string;
+  moderatorId: string;
+  onAdd: () => void;
   onCancel: () => void;
 }
 
 const AddQuestionPanel: React.FC<AddQuestionPanelProps> = ({
+  roomId,
+  moderatorId,
   onAdd,
   onCancel,
 }) => {
   const modalRef = useRef<HTMLDivElement>(null);
   const [questionText, setQuestionText] = useState("");
-  const [questionType, setQuestionType] =
-    useState<QuestionType>("multiple-choice");
   const [isRequired, setIsRequired] = useState(true);
   const [options, setOptions] = useState<string[]>(["", ""]);
   const [maxLength, setMaxLength] = useState<number | undefined>(undefined);
   const [maxRating, setMaxRating] = useState<number>(5);
+  const questionType: QuestionType = "text";
+
 
   // Handle click outside to close
   useEffect(() => {
@@ -60,7 +65,6 @@ const AddQuestionPanel: React.FC<AddQuestionPanelProps> = ({
   useEffect(() => {
     return () => {
       setQuestionText("");
-      setQuestionType("multiple-choice");
       setIsRequired(true);
       setOptions(["", ""]);
       setMaxLength(undefined);
@@ -79,43 +83,26 @@ const AddQuestionPanel: React.FC<AddQuestionPanelProps> = ({
   };
 
   const handleRemoveOption = (index: number) => {
-    if (options.length <= 2) return; // Minimum 2 options
+    if (options.length <= 2) return;
     const newOptions = options.filter((_, i) => i !== index);
     setOptions(newOptions);
   };
+const handleSubmit = (e: React.FormEvent) => {
+  e.preventDefault();
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  if (!questionText.trim()) {
+    alert("Please enter a question");
+    return;
+  }
 
-    if (!questionText.trim()) {
-      alert("Please enter a question");
-      return;
-    }
-
-    if (
-      (questionType === "multiple-choice" ||
-        questionType === "single-choice") &&
-      options.some((opt) => !opt.trim())
-    ) {
-      alert("Please fill in all options");
-      return;
-    }
-
-    const newQuestion: Omit<Question, "id" | "pollId" | "order"> = {
-      text: questionText,
-      type: questionType,
-      required: isRequired,
-      options:
-        questionType === "multiple-choice" || questionType === "single-choice"
-          ? options
-          : undefined,
-      maxLength: questionType === "text" ? maxLength : undefined,
-      maxRating: questionType === "rating" ? maxRating : undefined,
-    };
-
-    onAdd(newQuestion);
-    onCancel();
-  };
+  socket.emit("askQuestion", {
+    roomId,
+    userId: moderatorId,
+    question: questionText,
+  });
+  onAdd();
+  onCancel();
+};
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
@@ -149,68 +136,6 @@ const AddQuestionPanel: React.FC<AddQuestionPanelProps> = ({
             />
           </div>
 
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Question Type
-            </label>
-            <select
-              value={questionType}
-              onChange={(e) => setQuestionType(e.target.value as QuestionType)}
-              className="w-full px-3 py-2 border text-black border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
-            >
-              <option value="multiple-choice">Multiple Choice</option>
-              <option value="single-choice">Single Choice</option>
-              <option value="text">Open Text</option>
-              <option value="rating">Rating</option>
-              <option value="audience-qa">Audience Q&A</option>
-            </select>
-          </div>
-
-          {(questionType === "multiple-choice" ||
-            questionType === "single-choice") && (
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Options
-              </label>
-              <div className="space-y-2">
-                {options.map((option, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center space-x-2  text-black"
-                  >
-                    <input
-                      type="text"
-                      value={option}
-                      onChange={(e) =>
-                        handleOptionChange(index, e.target.value)
-                      }
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
-                      placeholder={`Option ${index + 1}`}
-                      required
-                    />
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveOption(index)}
-                      className="p-2 text-gray-500 hover:text-red-600 rounded-md hover:bg-gray-100"
-                      title="Remove option"
-                      disabled={options.length <= 2}
-                    >
-                      <X size={16} />
-                    </button>
-                  </div>
-                ))}
-                <button
-                  type="button"
-                  onClick={handleAddOption}
-                  className="flex items-center text-sm cursor-pointer text-purple-600 hover:text-purple-800 mt-2"
-                >
-                  <PlusCircle size={16} className="mr-1" />
-                  Add Option
-                </button>
-              </div>
-            </div>
-          )}
-
           {questionType === "text" && (
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -228,22 +153,6 @@ const AddQuestionPanel: React.FC<AddQuestionPanelProps> = ({
                 placeholder="Leave empty for unlimited"
                 min="1"
               />
-            </div>
-          )}
-
-          {questionType === "rating" && (
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Maximum Rating
-              </label>
-              <select
-                value={maxRating}
-                onChange={(e) => setMaxRating(parseInt(e.target.value))}
-                className="w-full px-3 py-2 border text-black border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
-              >
-                <option value="5">5 Stars</option>
-                <option value="10">10 Points</option>
-              </select>
             </div>
           )}
 

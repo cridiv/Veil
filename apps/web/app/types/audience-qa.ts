@@ -1,9 +1,9 @@
 export interface AudienceQuestion {
   id: string;
-  questionId: string; // Reference to the main Question
+  questionId: string;
   text: string;
-  authorName: string; // Could be anonymous or user name
-  authorId?: string; // Optional if anonymous
+  authorName: string;
+  authorId?: string;
   timestamp: Date;
   upvotes: number;
   isAnswered: boolean;
@@ -15,8 +15,8 @@ export interface AudienceReply {
   id: string;
   audienceQuestionId: string;
   text: string;
-  authorName: string; // Will be moderator name
-  authorId: string; // Moderator ID
+  authorName: string; 
+  authorId: string;
   timestamp: Date;
-  isOfficial: boolean; // To mark official responses from moderators
+  isOfficial: boolean;
 }
