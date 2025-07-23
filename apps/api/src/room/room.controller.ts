@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Req, Get, UseGuards, Param } from '@nestjs/common';
+import { Controller, Post, Body, Req, Get, UseGuards, Param, NotFoundException } from '@nestjs/common';
 import { Request } from 'express';
 import { RoomService } from './room.service';
 import { CreateRoomDto } from './dto/create-room.dto';
@@ -25,10 +25,11 @@ async getMyRooms(@Req() req: Request) {
 }
 
 @UseGuards(JwtAuthGuard)
-@Get(':slug')
-async getRoomBySlug(@Param('slug') slug: string) {
-  return this.roomService.findRoomBySlug(slug);
+@Get(':id')
+async getRoomById(@Param('id') id: string) {
+  return this.roomService.findRoomsByUserId(id);
 }
+
 
   @Get('me')
   getMe(@Req() req) {

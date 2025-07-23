@@ -11,7 +11,7 @@ interface Question {
 
 @Injectable()
 export class QuestionStoreService {
-  private questions: Record<string, Question[]> = {}; // roomId -> questions[]
+  private questions: Record<string, Question[]> = {};
 
   addQuestion(roomId: string, question: Question) {
     if (!this.questions[roomId]) this.questions[roomId] = [];

@@ -1,16 +1,11 @@
-"use client";
+'use client';
 
-import RoomClient from "./RoomClient";
-import React, { useState, useEffect, useRef } from "react";
-import { useParams } from "next/navigation";
+import React, { useState, useEffect, useRef } from 'react';
+import { useParams } from 'next/navigation';
+import { socket } from '../../lib/socket';
 import {
-  Send,
-  MessageSquare,
-  BarChart3,
-  Users,
-  ThumbsUp,
-  Clock,
-} from "lucide-react";
+  Send, MessageSquare, BarChart3, Users, ThumbsUp, Clock,
+} from 'lucide-react';
 
 interface Question {
   id: string;
@@ -36,127 +31,122 @@ interface Poll {
   timeLeft: string;
 }
 
-const RoomPage = () => {
-  const { slug } = useParams();
-  const [roomId, setRoomId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState("qa");
-  const [newQuestion, setNewQuestion] = useState("");
+interface Props {
+  roomId: string;
+}
+
+const RoomClient = () => {
+  const params = useParams();
+  const roomId = params?.id as string;
+  const [isRoomLoading, setIsRoomLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('qa');
+  const [newQuestion, setNewQuestion] = useState('');
   const [questions, setQuestions] = useState<Question[]>([]);
   const [polls, setPolls] = useState<Poll[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToTop = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
   useEffect(() => {
     scrollToTop();
   }, [questions]);
 
-  useEffect(() => {
-    const fetchRoom = async () => {
-      try {
-        const token = localStorage.getItem("auth_token");
-        if (!token) return;
+useEffect(() => {
+  const fetchRoom = async () => {
+    try {
+      const token = localStorage.getItem('auth_token');
+      if (!token) return;
 
-        const res = await fetch(`http://localhost:5000/rooms/slug/${slug}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-
-        if (!res.ok) throw new Error("Failed to fetch room");
-
-        const room = await res.json();
-        setRoomId(room.id);
-      } catch (err) {
-        console.error("Error fetching room:", err);
-      }
-    };
-
-    fetchRoom();
-  }, [slug]);
-
-  useEffect(() => {
-    if (!roomId) return;
-
-    const fetchQuestions = async () => {
-      const token = localStorage.getItem("auth_token");
-      const res = await fetch(
-        `http://localhost:5000/rooms/${roomId}/questions`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-
-      const data = await res.json();
-      setQuestions(data);
-    };
-
-    const fetchPolls = async () => {
-      const token = localStorage.getItem("auth_token");
-      const res = await fetch(`http://localhost:5000/rooms/${roomId}/polls`, {
+      const res = await fetch(`http://localhost:5000/rooms/${roomId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      const data = await res.json();
-      setPolls(data);
-    };
+      if (!res.ok) throw new Error('Failed to fetch room');
 
-    fetchQuestions();
-    fetchPolls();
-  }, [roomId]);
-
-  const handleSubmitQuestion = async () => {
-    if (!newQuestion.trim() || !roomId) return;
-
-    const token = localStorage.getItem("auth_token");
-
-    try {
-      const res = await fetch(
-        `http://localhost:5000/rooms/${roomId}/questions`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ question: newQuestion }),
-        }
-      );
-
-      if (!res.ok) throw new Error("Failed to submit question");
-
-      const newQ = await res.json();
-      setQuestions([newQ, ...questions]);
-      setNewQuestion("");
+      const room = await res.json();
+      setIsRoomLoading(false);
     } catch (err) {
-      console.error("Failed to submit question:", err);
+      console.error('Error fetching room:', err);
     }
   };
 
+  fetchRoom();
+}, [roomId]);
+
+useEffect(() => {
+  if (!roomId) return;
+
+  const userId = localStorage.getItem('temp_userId') ?? 'guest';
+  socket.emit('joinRoom', { roomId, userId });
+
+  socket.emit('getQuestions', roomId);
+  const handleNewQuestion = (question: Question) => {
+    setQuestions((prev) => [question, ...prev]);
+  };
+
+  socket.on('newQuestion', handleNewQuestion);
+
+  const fetchPolls = async () => {
+    const token = localStorage.getItem('auth_token');
+    const res = await fetch(`http://localhost:5000/rooms/${roomId}/polls`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    const data = await res.json();
+    setPolls(data);
+  };
+  fetchPolls();
+
+  return () => {
+    socket.off('newQuestion', handleNewQuestion);
+  };
+}, [roomId]);
+
+const handleSubmitQuestion = () => {
+  if (!newQuestion.trim() || !roomId || isRoomLoading) {
+    console.warn('Missing question or roomId');
+    return;
+  }
+
+  const userId = localStorage.getItem('temp_userId');
+  const username = localStorage.getItem('temp_username');
+
+  socket.emit('askQuestion', {
+    roomId,
+    userId: userId ?? 'anonymous',
+    question: newQuestion,
+  });
+
+  setNewQuestion('');
+};
+
   const handleLike = async (id: string) => {
-    const token = localStorage.getItem("auth_token");
+    const token = localStorage.getItem('auth_token');
 
     await fetch(`http://localhost:5000/questions/${id}/like`, {
-      method: "POST",
+      method: 'POST',
       headers: {
         Authorization: `Bearer ${token}`,
       },
     });
 
-    setQuestions(
-      questions.map((q) => (q.id === id ? { ...q, likes: q.likes + 1 } : q))
-    );
+    console.log("questions", questions);
+    setQuestions(questions.map(q =>
+      q.id === id ? { ...q, likes: q.likes + 1 } : q
+    ));
   };
 
   const handleVote = async (pollId: string, optionIndex: number) => {
-    const token = localStorage.getItem("auth_token");
+    const token = localStorage.getItem('auth_token');
 
     try {
       await fetch(`http://localhost:5000/polls/${pollId}/vote`, {
-        method: "POST",
+        method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({ optionIndex }),
       });
@@ -168,7 +158,7 @@ const RoomPage = () => {
       const updated = await res.json();
       setPolls(updated);
     } catch (err) {
-      console.error("Vote failed:", err);
+      console.error('Vote failed:', err);
     }
   };
 
@@ -196,15 +186,15 @@ const RoomPage = () => {
         <div className="border-b border-gray-200 mb-6">
           <nav className="flex space-x-8">
             <button
-              onClick={() => setActiveTab("qa")}
-              className={`flex items-center space-x-2 py-2 px-1 border-b-2 font-medium text-sm ${activeTab === "qa" ? "border-purple-500 text-purple-600" : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"}`}
+              onClick={() => setActiveTab('qa')}
+              className={`flex items-center space-x-2 py-2 px-1 border-b-2 font-medium text-sm ${activeTab === 'qa' ? 'border-purple-500 text-purple-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
             >
               <MessageSquare className="w-4 h-4" />
               <span>Q&A</span>
             </button>
             <button
-              onClick={() => setActiveTab("polls")}
-              className={`flex items-center space-x-2 py-2 px-1 border-b-2 font-medium text-sm ${activeTab === "polls" ? "border-purple-500 text-purple-600" : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"}`}
+              onClick={() => setActiveTab('polls')}
+              className={`flex items-center space-x-2 py-2 px-1 border-b-2 font-medium text-sm ${activeTab === 'polls' ? 'border-purple-500 text-purple-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
             >
               <BarChart3 className="w-4 h-4" />
               <span>Polls</span>
@@ -213,21 +203,21 @@ const RoomPage = () => {
         </div>
 
         {/* QA Tab */}
-        {activeTab === "qa" && (
+        {activeTab === 'qa' && (
           <>
             <div className="bg-gray-50 border border-gray-200 p-4 rounded-lg mb-6">
               <div className="flex space-x-3">
                 <input
                   value={newQuestion}
                   onChange={(e) => setNewQuestion(e.target.value)}
-                  onKeyPress={(e) =>
-                    e.key === "Enter" && handleSubmitQuestion()
-                  }
+                  onKeyPress={(e) => e.key === 'Enter' && handleSubmitQuestion()}
                   placeholder="Ask your question..."
+                  disabled={isRoomLoading}
                   className="flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
                 />
                 <button
                   onClick={handleSubmitQuestion}
+                  disabled={isRoomLoading}
                   className="bg-purple-600 text-white p-3 rounded-lg hover:bg-purple-700"
                 >
                   <Send className="w-4 h-4" />
@@ -237,7 +227,7 @@ const RoomPage = () => {
 
             <div className="space-y-4">
               <div ref={messagesEndRef} />
-              {questions.map((q) => (
+              {questions.map(q => (
                 <div key={q.id} className="bg-gray-50 border p-4 rounded-lg">
                   <div className="flex justify-between items-start mb-2">
                     <div className="flex items-center space-x-2">
@@ -256,9 +246,7 @@ const RoomPage = () => {
                   <p className="text-gray-800 mb-3">{q.question}</p>
                   {q.answer && (
                     <div className="bg-white border-l-4 border-purple-500 p-3 rounded mb-2">
-                      <p className="text-sm text-gray-700 font-medium">
-                        Answer:
-                      </p>
+                      <p className="text-sm text-gray-700 font-medium">Answer:</p>
                       <p>{q.answer}</p>
                     </div>
                   )}
@@ -276,7 +264,7 @@ const RoomPage = () => {
         )}
 
         {/* Polls Tab */}
-        {activeTab === "polls" && (
+        {activeTab === 'polls' && (
           <div className="space-y-6">
             {polls.map((poll) => (
               <div key={poll.id} className="bg-gray-50 border p-6 rounded-lg">
@@ -284,9 +272,7 @@ const RoomPage = () => {
                   <h3 className="text-lg font-semibold">{poll.question}</h3>
                   <div className="text-sm text-right">
                     <div>{poll.totalVotes} votes</div>
-                    <div className="text-purple-600">
-                      Time left: {poll.timeLeft}
-                    </div>
+                    <div className="text-purple-600">Time left: {poll.timeLeft}</div>
                   </div>
                 </div>
                 <div className="space-y-3">
@@ -298,9 +284,7 @@ const RoomPage = () => {
                       >
                         <div className="flex justify-between text-sm mb-1">
                           <span>{opt.text}</span>
-                          <span className="text-purple-600 font-medium">
-                            {opt.percentage}%
-                          </span>
+                          <span className="text-purple-600 font-medium">{opt.percentage}%</span>
                         </div>
                         <div className="bg-gray-200 h-2 rounded-full">
                           <div
@@ -308,9 +292,7 @@ const RoomPage = () => {
                             style={{ width: `${opt.percentage}%` }}
                           />
                         </div>
-                        <div className="text-xs text-gray-500 mt-1">
-                          {opt.votes} votes
-                        </div>
+                        <div className="text-xs text-gray-500 mt-1">{opt.votes} votes</div>
                       </button>
                     </div>
                   ))}
@@ -324,4 +306,4 @@ const RoomPage = () => {
   );
 };
 
-export default RoomPage;
+export default RoomClient;

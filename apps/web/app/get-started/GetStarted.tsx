@@ -54,7 +54,6 @@ const GetStarted = () => {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  // --- JOIN ROOM (participant, no auth header needed) ---
   const joinRoom = async (slug: string, userName: string) => {
     const backend = process.env.NEXT_PUBLIC_BACKEND_URL;
     if (!backend) throw new Error('Backend URL not configured');
@@ -109,7 +108,7 @@ const GetStarted = () => {
       }
 
       const { token, user } = response;
-
+      localStorage.setItem('temp_userId', user.id);
       localStorage.setItem('temp_username', user.username);
       localStorage.setItem('temp_room_id', user.roomId);
       if (token) {

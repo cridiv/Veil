@@ -2,17 +2,14 @@ import {
   WebSocketGateway,
   SubscribeMessage,
   MessageBody,
+  WebSocketServer,
+  ConnectedSocket,
   OnGatewayConnection,
   OnGatewayDisconnect,
-  ConnectedSocket,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-import { RoomService } from './room.service';
-import { TempUserStoreService } from '../temp-user/redis-store/temp-user-store.service';
-import { AskQuestionDto } from './dto/ask-question.dto';
-import { AnswerQuestionDto } from './dto/answer-question.dto';
+import { v4 as uuidv4 } from 'uuid';
 import { QuestionStoreService } from './question-store.service';
-import crypto from 'crypto';
 
 @WebSocketGateway({
   cors: {
@@ -20,114 +17,74 @@ import crypto from 'crypto';
   },
 })
 export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
-  constructor(
-    private roomService: RoomService,
-    private tempUserStoreService: TempUserStoreService,
-    private questionStoreService: QuestionStoreService
-  ) {}
-  
+  @WebSocketServer()
   server: Server;
-  private socketUserMap = new Map<string, { userId: string; roomId: string }>();
 
-  async handleConnection(client: Socket) {
-    console.log(`Socket connected: ${client.id}`);
+  constructor(private readonly questionStore: QuestionStoreService) {}
+
+  handleConnection(client: Socket) {
+    console.log(`Client connected: ${client.id}`);
   }
 
-  async handleDisconnect(client: Socket) {
-    const userData = this.socketUserMap.get(client.id);
-    if (userData) {
-      await this.tempUserStoreService.deleteUser(userData.userId);
-      this.socketUserMap.delete(client.id);
-
-      client.to(userData.roomId).emit('userLeft', {
-        userId: userData.userId,
-      });
-
-      console.log(`User ${userData.userId} disconnected and removed from room ${userData.roomId}`);
-    } else {
-      console.log(`Unknown socket disconnected: ${client.id}`);
-    }
+  handleDisconnect(client: Socket) {
+    console.log(`Client disconnected: ${client.id}`);
   }
 
+  // 👥 When a user joins a room
   @SubscribeMessage('joinRoom')
-  async handleJoinRoom(
+  handleJoinRoom(
+    @MessageBody() data: { roomId: string; userId: string },
     @ConnectedSocket() client: Socket,
-    @MessageBody()
-    payload: {
-      username: string;
-      roomSlug: string;
-    },
   ) {
-    const { username, roomSlug } = payload;
+    client.join(data.roomId);
+    console.log(`${data.userId} joined room: ${data.roomId}`);
+  }
 
-    const room = await this.roomService.findRoomBySlug(roomSlug);
-    if (!room) {
-      client.emit('error', { message: 'Room not found' });
-      return;
+  // ❓ When a user asks a question
+  @SubscribeMessage('askQuestion')
+  handleAskQuestion(
+    @MessageBody()
+    data: { roomId: string; userId: string; question: string },
+  ) {
+    const newQuestion = {
+      id: uuidv4(),
+      userId: data.userId,
+      roomId: data.roomId,
+      question: data.question,
+      timestamp: Date.now(),
+    };
+
+    this.questionStore.addQuestion(data.roomId, newQuestion);
+
+    // 📢 Broadcast to room
+    this.server.to(data.roomId).emit('newQuestion', newQuestion);
+  }
+
+  // ✅ When a moderator replies
+  @SubscribeMessage('replyToQuestion')
+  handleReplyToQuestion(
+    @MessageBody()
+    data: { roomId: string; questionId: string; answer: string },
+  ) {
+    const updated = this.questionStore.answerQuestion(
+      data.roomId,
+      data.questionId,
+      data.answer,
+    );
+
+    if (updated) {
+      // 📢 Broadcast update to room
+      this.server.to(data.roomId).emit('questionReplied', updated);
     }
-
-    const userId = `${client.id}-${Date.now()}`;
-
-    await this.tempUserStoreService.setUser(userId, {
-      username,
-      roomId: room.id,
-    });
-
-    this.socketUserMap.set(client.id, { userId, roomId: room.id });
-
-    client.join(room.id);
-
-    client.to(room.id).emit('userJoined', {
-      userId,
-      username,
-    });
-
-    client.emit('joinedRoom', {
-      userId,
-      roomId: room.id,
-      roomTitle: room.title,
-    });
-
-    console.log(`User ${username} joined room ${roomSlug}`);
   }
 
-  @SubscribeMessage('ask_question')
-async handleAskQuestion(
-  @MessageBody() dto: AskQuestionDto,
-  @ConnectedSocket() client: Socket,
-) {
-  const question = {
-    id: crypto.randomUUID(),
-    userId: dto.userId,
-    roomId: dto.roomId,
-    question: dto.question,
-    timestamp: Date.now(),
-  };
-
-  this.questionStoreService.addQuestion(dto.roomId, question);
-
-  this.server.to(dto.roomId).emit('new_question', question);
-}
-
-@SubscribeMessage('answer_question')
-async handleAnswerQuestion(
-  @MessageBody() dto: AnswerQuestionDto,
-  @ConnectedSocket() client: Socket,
-) {
-  const room = await this.roomService.findRoomBySlug(dto.roomId);
-  if (!room || room.moderatorId !== dto.moderatorId) {
-    client.emit('error', { message: 'Unauthorized to answer question' });
-    return;
+  // 🧾 Optional: Fetch all questions (on room load)
+  @SubscribeMessage('getQuestions')
+  handleGetQuestions(
+    @MessageBody() roomId: string,
+    @ConnectedSocket() client: Socket,
+  ) {
+    const questions = this.questionStore.getQuestions(roomId);
+    client.emit('questionsList', questions);
   }
-
-  const updated = this.questionStoreService.answerQuestion(dto.roomId, dto.questionId, dto.answer);
-
-  if (!updated) {
-    client.emit('error', { message: 'Question not found' });
-    return;
-  }
-
-  this.server.to(dto.roomId).emit('question_answered', updated);
-}
-
 }
