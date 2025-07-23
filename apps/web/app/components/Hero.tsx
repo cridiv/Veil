@@ -6,7 +6,7 @@ const Hero = () => {
   return (
     <div className="relative min-h-screen w-full p-0 md:p-8 flex items-center justify-center bg-[rgb(25, 26, 31)]">
       {/* Windowed Container for Larger Devices */}
-      <div className="relative w-full max-w-5xl mx-auto rounded-none md:rounded-3xl overflow-hidden shadow-none md:shadow-2xl">
+      <div className="relative w-full max-w-5xl mx-auto rounded-none  overflow-hidden shadow-none md:shadow-2xl">
         {/* Background Image */}
         <div className="absolute inset-0 w-full h-full">
           <Image
@@ -22,9 +22,10 @@ const Hero = () => {
         <div className="relative z-10 flex items-center justify-center min-h-screen md:min-h-[80vh] p-6 md:p-12">
           <div className="w-full max-w-4xl mx-auto text-center">
             <h1 className="text-4xl md:text-6xl font-bold text-white mb-6 leading-tight">
-              Ask. Vote. Engage <br />
+              Engage Your Audience in Real Time
+              <br />
               <span className="bg-[#f5f5f5] bg-clip-text text-transparent">
-                Instantly
+                No Downloads, No Signups
               </span>
             </h1>
 
