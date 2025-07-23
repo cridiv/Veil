@@ -7,7 +7,7 @@ import AddQuestionPanel from "./components/AddQuestionPanel";
 import PollStats from "./components/PollStats";
 import LoadingSkeleton from "./components/LoadingSkeleton";
 import AudienceQAManagerContainer from "./components/AudienceQAManagerContainer";
-import { useMockAudienceQuestions } from "./hooks/useMockAudienceQuestions";
+
 import { Poll, Question, QuestionType } from "../../../types/poll";
 
 const PollDetailPage = () => {
@@ -30,69 +30,7 @@ const PollDetailPage = () => {
       // Simulate API call
       setIsLoading(true);
 
-      try {
-        // Mock data for demonstration
-        setTimeout(() => {
-          const mockPoll: Poll = {
-            id: pollId,
-            name: "Product Feedback Session",
-            slug: slug,
-            status: "active",
-            responses: 24,
-            createdAt: new Date("2025-07-15"),
-          };
-
-          const mockQuestions: Question[] = [
-            {
-              id: "q1",
-              pollId: pollId,
-              text: "How satisfied are you with our product?",
-              type: "multiple-choice",
-              options: [
-                "Very satisfied",
-                "Satisfied",
-                "Neutral",
-                "Dissatisfied",
-                "Very dissatisfied",
-              ],
-              required: true,
-              order: 1,
-            },
-            {
-              id: "q2",
-              pollId: pollId,
-              text: "What features would you like to see improved?",
-              type: "text",
-              required: false,
-              order: 2,
-            },
-            {
-              id: "q3",
-              pollId: pollId,
-              text: "Would you recommend our product to others?",
-              type: "single-choice",
-              options: ["Yes", "No", "Maybe"],
-              required: true,
-              order: 3,
-            },
-            {
-              id: "q4",
-              pollId: pollId,
-              text: "Questions for the speaker?",
-              type: "audience-qa",
-              required: false,
-              order: 4,
-            },
-          ];
-
-          setPoll(mockPoll);
-          setQuestions(mockQuestions);
-          setIsLoading(false);
-        }, 1500);
-      } catch (error) {
-        console.error("Error fetching poll data:", error);
-        setIsLoading(false);
-      }
+      setIsLoading(false);
     };
 
     fetchPoll();
@@ -149,7 +87,7 @@ const PollDetailPage = () => {
         <h1 className="text-2xl font-bold text-red-600">Poll not found</h1>
         <button
           onClick={returnToPreviousPage}
-          className="mt-4 px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700"
+          className="mt-4 px-4 py-2 bg-purple-600 cursor-pointer text-white rounded-md hover:bg-purple-700"
         >
           Go Back
         </button>
