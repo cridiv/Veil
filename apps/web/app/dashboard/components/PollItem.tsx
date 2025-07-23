@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Poll } from "../../types/poll";
+import { useRouter } from "next/navigation";
 
 interface PollItemProps {
   poll: Poll;
@@ -17,6 +18,7 @@ const PollItem: React.FC<PollItemProps> = ({
   const [showCopiedMessage, setShowCopiedMessage] = useState<
     "link" | "slug" | null
   >(null);
+  const router = useRouter();
 
   // Format date range
   const formatDate = (date: Date) => {
@@ -27,7 +29,6 @@ const PollItem: React.FC<PollItemProps> = ({
     });
   };
 
-  // Copy link or slug to clipboard
   const copyToClipboard = (type: "link" | "slug", value: string) => {
     navigator.clipboard.writeText(
       type === "link" ? `${window.location.origin}/polls/${poll.slug}` : value
@@ -35,13 +36,40 @@ const PollItem: React.FC<PollItemProps> = ({
     setShowCopiedMessage(type);
     setTimeout(() => setShowCopiedMessage(null), 2000);
   };
+// Updated handlePollClick in PollItem
+const handlePollClick = async () => {
+  try {
+    // Generate temp user data like regular users do
+    const generateTempUser = () => {
+      const tempId = Math.random().toString(36).substr(2, 9);
+      const tempUsername = `Moderator_${tempId}`;
+      return { tempId, tempUsername };
+    };
 
-  // redirect to poll detail page
-  const handlePollClick = () => {
-    window.location.href = `/dashboard/polls/${poll.slug}`;
-  };
+    // Check if temp user data already exists, if not create it
+    let tempUserId = localStorage.getItem("temp_userId");
+    let tempUsername = localStorage.getItem("temp_username");
 
-  // Get status badge
+    if (!tempUserId || !tempUsername) {
+      const { tempId, tempUsername: generatedUsername } = generateTempUser();
+      tempUserId = tempId;
+      tempUsername = generatedUsername;
+      
+      localStorage.setItem("temp_userId", tempUserId);
+      localStorage.setItem("temp_username", tempUsername);
+    }
+
+    localStorage.setItem("is_moderator", "true");
+    
+    console.log("Temp user data:", { tempUserId, tempUsername });
+    console.log("Navigating to:", `/room/${poll.id}`);
+
+    router.push(`/room/${poll.id}`);
+
+  } catch (err) {
+    console.error("Error accessing room:", err);
+  }
+};
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "active":
@@ -123,10 +151,10 @@ const PollItem: React.FC<PollItemProps> = ({
         <div className="text-sm text-gray-900">{poll.responses}</div>
       </td>
       <td className="px-4 py-4 hidden lg:table-cell">
-  <div className="text-sm text-gray-900">
-    {poll.createdAt ? formatDate(new Date(poll.createdAt)) : "—"}
-  </div>
-</td>
+        <div className="text-sm text-gray-900">
+          {poll.createdAt ? formatDate(new Date(poll.createdAt)) : "—"}
+        </div>
+      </td>
       <td className="px-4 py-4 text-right text-sm font-medium">
         <div className="flex justify-end space-x-2">
           <button

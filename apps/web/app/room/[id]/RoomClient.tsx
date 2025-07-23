@@ -70,8 +70,6 @@ const RoomClient = () => {
           headers: { Authorization: `Bearer ${token}` },
         });
 
-        if (!res.ok) throw new Error("Failed to fetch room");
-
         const room = await res.json();
         setIsRoomLoading(false);
       } catch (err) {
@@ -86,7 +84,13 @@ const RoomClient = () => {
     if (!roomId) return;
 
     const userId = localStorage.getItem("temp_userId") ?? "guest";
-    socket.emit("joinRoom", { roomId, userId });
+    const isModerator = localStorage.getItem("is_moderator") === "true";
+    socket.emit('joinRoom', {
+  roomId: roomId,
+  userId: userId,
+  role: isModerator ? 'moderator' : 'user',
+});
+
 
     socket.emit("getQuestions", roomId);
     const handleNewQuestion = (question: Question) => {
@@ -223,7 +227,6 @@ const RoomClient = () => {
         );
       }
     } finally {
-      // Reset loading state
       setIsLoading(false);
     }
   };

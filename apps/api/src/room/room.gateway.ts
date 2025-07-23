@@ -23,24 +23,34 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
   constructor(private readonly questionStore: QuestionStoreService) {}
 
   handleConnection(client: Socket) {
-    console.log(`Client connected: ${client.id}`);
+    console.log(`🟢 Client connected: ${client.id}`);
+    console.log(`📊 Total clients: ${this.server.sockets.sockets.size}`);
   }
 
   handleDisconnect(client: Socket) {
-    console.log(`Client disconnected: ${client.id}`);
+    console.log(`🔴 Client disconnected: ${client.id}`);
+    console.log(`📊 Total clients: ${this.server.sockets.sockets.size}`);
   }
 
-  // 👥 When a user joins a room
-  @SubscribeMessage('joinRoom')
-  handleJoinRoom(
-    @MessageBody() data: { roomId: string; userId: string },
-    @ConnectedSocket() client: Socket,
-  ) {
-    client.join(data.roomId);
-    console.log(`${data.userId} joined room: ${data.roomId}`);
-  }
+ @SubscribeMessage('joinRoom')
+handleJoinRoom(
+  @MessageBody() data: { roomId: string; userId: string; role: 'moderator' | 'user' },
+  @ConnectedSocket() client: Socket,
+) {
+  console.log(`📝 ${data.role} joining room:`, data);
 
-  // ❓ When a user asks a question
+  client.join(data.roomId);
+  client.data.role = data.role;
+  client.data.userId = data.userId;
+
+  this.server.to(data.roomId).emit('userJoined', {
+    userId: data.userId,
+    role: data.role,
+  });
+
+  console.log(`✅ ${data.role} ${data.userId} joined room: ${data.roomId}`);
+}
+
   @SubscribeMessage('askQuestion')
   handleAskQuestion(
     @MessageBody()
@@ -55,40 +65,47 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
     };
 
     this.questionStore.addQuestion(data.roomId, newQuestion);
-
-    // 📢 Broadcast to room
     this.server.to(data.roomId).emit('newQuestion', newQuestion);
   }
 
-  // ✅ When a moderator replies
-  @SubscribeMessage('replyToQuestion')
-  handleReplyToQuestion(
-    @MessageBody()
-    data: { roomId: string; questionId: string; answer: string },
-  ) {
-    const updated = this.questionStore.answerQuestion(
-      data.roomId,
-      data.questionId,
-      data.answer,
-    );
-
-    if (updated) {
-      // 📢 Broadcast update to room
-      this.server.to(data.roomId).emit('questionReplied', updated);
-    }
+@SubscribeMessage('replyToQuestion')
+handleReplyToQuestion(
+  @MessageBody() data: { roomId: string; questionId: string; content: string },
+  @ConnectedSocket() client: Socket,
+) {
+  if (client.data.role !== 'moderator') {
+    console.warn('🚫 Non-moderator attempted to reply.');
+    client.emit('error', { message: 'Unauthorized action' });
+    return;
   }
 
-  // 🧾 Optional: Fetch all questions (on room load)
-  @SubscribeMessage('getQuestions')
-  handleGetQuestions(
-    @MessageBody() roomId: string,
-    @ConnectedSocket() client: Socket,
-  ) {
-    const questions = this.questionStore.getQuestions(roomId);
-    client.emit('questionsList', questions);
+  const updated = this.questionStore.answerQuestion(
+    data.roomId,
+    data.questionId,
+    data.content,
+  );
+
+  if (updated) {
+    this.server.to(data.roomId).emit('questionReplied', updated);
+  }
+}
+
+@SubscribeMessage('getQuestions')
+handleGetQuestions(
+  @MessageBody() data: any,
+  @ConnectedSocket() client: Socket,
+) {
+  if (!data || typeof data !== 'object' || typeof data.roomId !== 'string') {
+    console.warn('❌ Invalid getQuestions payload:', data);
+    return;
   }
 
-    @SubscribeMessage('upvoteQuestion')
+  console.log(`📋 Valid Get questions request:`, data);
+  const questions = this.questionStore.getQuestions(data.roomId);
+  client.emit('questionsList', questions);
+}
+
+  @SubscribeMessage('upvoteQuestion')
   handleUpvoteQuestion(
     @MessageBody() data: { roomId: string; questionId: string },
   ) {

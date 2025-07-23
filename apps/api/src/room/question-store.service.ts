@@ -7,6 +7,9 @@ interface Question {
   question: string;
   answer?: string;
   timestamp: number;
+  isAnswered?: boolean;
+  isHidden?: boolean;
+  upvotes?: number;
 }
 
 @Injectable()

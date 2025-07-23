@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { Question } from "../../../../types/poll";
 import AudienceQAManager from "./AudienceQAManager";
 import ModeratorRoom from "./ModeratorRoom";
-import { useMockAudienceQuestions } from "../hooks/useMockAudienceQuestions";
+import { useWebSocketAudienceQuestions } from "../hooks/useMockAudienceQuestions";
 
 interface AudienceQAManagerContainerProps {
   question: Question;
@@ -24,7 +24,7 @@ const AudienceQAManagerContainer: React.FC<AudienceQAManagerContainerProps> = ({
     handleDelete,
     handleToggleAnswered,
     handleToggleHidden,
-  } = useMockAudienceQuestions(question.id);
+  } = useWebSocketAudienceQuestions(question.id);
 
   if (loading) {
     return (

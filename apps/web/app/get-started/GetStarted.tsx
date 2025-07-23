@@ -112,11 +112,10 @@ const GetStarted = () => {
       localStorage.setItem('temp_username', user.username);
       localStorage.setItem('temp_room_id', user.roomId);
       if (token) {
-        // this lets participant hit protected endpoints later if needed
         localStorage.setItem('auth_token', token);
       }
 
-      await setTempUser(user.username, user.roomId); // no-op for now
+      await setTempUser(user.username, user.roomId);
 
       console.log('Joining room:', { cleanSlug, cleanName, user });
 

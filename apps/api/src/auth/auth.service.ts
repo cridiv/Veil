@@ -8,7 +8,8 @@ export class AuthService {
     async signJwt(payload: {
         sub: string,
         username: string,
-        roomId: string
+        roomId: string,
+        role: 'moderator' | 'user'
     }) {
         return this.jwtService.signAsync(payload, {
             secret: process.env.JWT_SECRET,

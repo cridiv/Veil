@@ -7,7 +7,7 @@ import AddQuestionPanel from "./components/AddQuestionPanel";
 import PollStats from "./components/PollStats";
 import LoadingSkeleton from "./components/LoadingSkeleton";
 import AudienceQAManagerContainer from "./components/AudienceQAManagerContainer";
-
+import { socket } from "../../../lib/socket";
 import { Poll, Question, QuestionType } from "../../../types/poll";
 
 const PollDetailPage = () => {
@@ -21,44 +21,83 @@ const PollDetailPage = () => {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [isLive, setIsLive] = useState(false);
   const [isAddingQuestion, setIsAddingQuestion] = useState(false);
+  const [newModeratorQuestion, setNewModeratorQuestion] = useState("");
+  const [moderatorQuestions, setModeratorQuestions] = useState<Question[]>([]);
   const [selectedAudienceQAQuestion, setSelectedAudienceQAQuestion] =
     useState<Question | null>(null);
 
-  // Fetch poll data
-  useEffect(() => {
-    const fetchPoll = async () => {
-      // Simulate API call
-      setIsLoading(true);
+useEffect(() => {
+  const userId = localStorage.getItem("auth_token");
+  socket.emit("joinRoom", { roomId: pollId, userId});
 
-      setIsLoading(false);
-    };
+  socket.emit("getQuestions", { roomId: pollId });
 
-    fetchPoll();
-  }, [pollId]);
+  socket.on("questionsList", (data) => {
+    setQuestions(data);
+    setIsLoading(false);
+    setPoll({
+      id: pollId,
+      name: "Live Poll",
+      slug: slug,
+      status: "active",
+      responses: data.length,
+      createdAt: new Date(),
+    });
+  });
 
-  const handleAddQuestion = (
-    question: Omit<Question, "id" | "pollId" | "order">
-  ) => {
-    const newQuestion: Question = {
-      id: `question-${Date.now()}`,
-      pollId: pollId,
-      order: questions.length + 1,
-      ...question,
-    };
+  const handleNewQuestion = (question: Question) => {
+  setQuestions((prev) => [question, ...prev]);
+};
+  
+  socket.on("newQuestion", handleNewQuestion);
 
-    setQuestions([...questions, newQuestion]);
-    setIsAddingQuestion(false);
-  };
-
-  const handleDeleteQuestion = (questionId: string) => {
-    setQuestions(questions.filter((q) => q.id !== questionId));
-  };
-
-  const handleUpdateQuestion = (updatedQuestion: Question) => {
-    setQuestions(
-      questions.map((q) => (q.id === updatedQuestion.id ? updatedQuestion : q))
+  socket.on("questionUpdated", (updated) => {
+    setQuestions((prev) =>
+      prev.map((q) => (q.id === updated.id ? updated : q))
     );
+  });
+
+  socket.on("questionDeleted", (id) => {
+    setQuestions((prev) => prev.filter((q) => q.id !== id));
+  });
+
+  return () => {
+    socket.off("questionsList");
+    socket.off("newQuestion", handleNewQuestion);
+    socket.off("questionUpdated");
+    socket.off("questionDeleted");
   };
+}, [pollId]);
+
+const handleModeratorSubmit = () => {
+  if (!newModeratorQuestion.trim()) return;
+
+  const userId = localStorage.getItem("auth_token"); // or "moderator" or session ID
+
+  socket.emit("askQuestion", {
+    roomId: pollId,
+    userId: userId ?? "moderator",
+    question: newModeratorQuestion,
+  });
+
+  setNewModeratorQuestion("");
+};
+
+
+const handleDeleteQuestion = (questionId: string) => {
+  socket.emit("deleteQuestion", {
+    roomId: pollId,
+    questionId,
+  });
+};
+
+const handleUpdateQuestion = (updatedQuestion: Question) => {
+  socket.emit("replyToQuestion", {
+    roomId: pollId,
+    questionId: updatedQuestion.id,
+    content: updatedQuestion.text || "",
+  });
+};
 
   const handleSelectAudienceQAQuestion = (question: Question) => {
     if (question.type === "audience-qa") {
@@ -151,7 +190,9 @@ const PollDetailPage = () => {
 
       {isAddingQuestion && (
         <AddQuestionPanel
-          onAdd={handleAddQuestion}
+          roomId={pollId}
+          moderatorId={localStorage.getItem("auth_token") ?? "moderator"}
+          onAdd={handleModeratorSubmit}
           onCancel={() => setIsAddingQuestion(false)}
         />
       )}

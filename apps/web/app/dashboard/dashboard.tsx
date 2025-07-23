@@ -3,7 +3,6 @@ import ActivityTable, { ActivityItem } from "./components/ActivityTable";
 import Link from "next/link";
 
 const Dashboard = () => {
-  // Sample data for the activity table
   const recentActivities: ActivityItem[] = [
     {
       id: "1",
