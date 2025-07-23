@@ -12,7 +12,7 @@ import {
   Send
 } from "lucide-react";
 import { Question } from "../../../../types/poll";
-import { AudienceQuestion, AudienceReply } from "../../../../types/audience-qa";
+import { AudienceQuestion, AudienceReply } from "../../../../types/poll";
 
 interface AudienceQAManagerProps {
   question: Question;
@@ -36,12 +36,10 @@ const AudienceQAManager: React.FC<AudienceQAManagerProps> = ({
   const [expandedQuestions, setExpandedQuestions] = useState<Set<string>>(new Set());
   const [replyText, setReplyText] = useState<Record<string, string>>({});
   
-  // Format timestamp
   const formatTime = (date: Date) => {
     return new Date(date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
-  // Toggle expanded state of a question
   const toggleExpanded = (questionId: string) => {
     const newExpanded = new Set(expandedQuestions);
     if (newExpanded.has(questionId)) {

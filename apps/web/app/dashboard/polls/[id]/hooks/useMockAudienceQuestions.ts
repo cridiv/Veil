@@ -1,141 +1,179 @@
 "use client";
-import React, { useState, useEffect } from "react";
-import { Question } from "../../../../types/poll";
-import { AudienceQuestion, AudienceReply } from "../../../../types/audience-qa";
+import { useState, useEffect, useRef } from 'react';
+import { io, Socket } from 'socket.io-client';
+import { AudienceQuestion, AudienceReply } from "../../../../types/poll";
 
-// This would typically be fetched from an API
-export const useMockAudienceQuestions = (questionId: string) => {
-  const [audienceQuestions, setAudienceQuestions] = useState<
-    AudienceQuestion[]
-  >([]);
+interface BackendQuestion {
+  id: string;
+  userId: string;
+  roomId: string;
+  question: string;
+  answer?: string;
+  timestamp: number;
+  isAnswered?: boolean;
+  isHidden?: boolean;
+  upvotes?: number;
+}
+
+const transformQuestion = (backendQ: BackendQuestion): AudienceQuestion => ({
+  id: backendQ.id,
+  questionId: backendQ.roomId, // Using roomId as questionId for compatibility
+  text: backendQ.question,
+  authorName: `User ${backendQ.userId.slice(-4)}`, // Show last 4 chars of userId
+  timestamp: new Date(backendQ.timestamp),
+  upvotes: backendQ.upvotes || 0,
+  isAnswered: backendQ.isAnswered || false,
+  isHidden: backendQ.isHidden || false,
+  replies: backendQ.answer ? [{
+    id: `reply-${backendQ.id}`,
+    audienceQuestionId: backendQ.id,
+    text: backendQ.answer,
+    authorName: "Moderator",
+    authorId: "moderator",
+    timestamp: new Date(backendQ.timestamp + 1000), // Slightly after question
+    isOfficial: true,
+  }] : [],
+});
+
+export const useWebSocketAudienceQuestions = (questionId: string) => {
+  const [audienceQuestions, setAudienceQuestions] = useState<AudienceQuestion[]>([]);
   const [loading, setLoading] = useState(true);
+  const [connected, setConnected] = useState(false);
+  const socketRef = useRef<Socket | null>(null);
 
-  // Generate mock audience questions for a specific question
   useEffect(() => {
-    // Simulate API fetch delay
-    const timer = setTimeout(() => {
-      if (questionId) {
-        const mockData: AudienceQuestion[] = [
-          {
-            id: "aq1",
-            questionId: questionId,
-            text: "Can you elaborate more on the specific use cases?",
-            authorName: "Alex Johnson",
-            authorId: "user123",
-            timestamp: new Date(Date.now() - 15 * 60000), // 15 minutes ago
-            upvotes: 12,
-            isAnswered: true,
-            replies: [
-              {
-                id: "reply1",
-                audienceQuestionId: "aq1",
-                text: "Great question! Our product is designed for both individual creators and enterprise teams. For individuals, it helps with content scheduling and analytics. For enterprises, it offers team collaboration and approval workflows.",
-                authorName: "Sam Smith",
-                authorId: "mod456",
-                timestamp: new Date(Date.now() - 10 * 60000), // 10 minutes ago
-                isOfficial: true,
-              },
-            ],
-          },
-          {
-            id: "aq2",
-            questionId: questionId,
-            text: "Is there a free trial available?",
-            authorName: "Taylor Williams",
-            authorId: "user456",
-            timestamp: new Date(Date.now() - 8 * 60000), // 8 minutes ago
-            upvotes: 8,
-            isAnswered: false,
-            replies: [],
-          },
-          {
-            id: "aq3",
-            questionId: questionId,
-            text: "How does this compare to competitor X?",
-            authorName: "Jamie Lee",
-            authorId: "user789",
-            timestamp: new Date(Date.now() - 5 * 60000), // 5 minutes ago
-            upvotes: 5,
-            isAnswered: false,
-            isHidden: true,
-            replies: [],
-          },
-          {
-            id: "aq4",
-            questionId: questionId,
-            text: "When will the mobile app be released?",
-            authorName: "Anonymous Attendee",
-            timestamp: new Date(Date.now() - 3 * 60000),
-            upvotes: 3,
-            isAnswered: false,
-            replies: [],
-          },
-        ];
+    // Initialize WebSocket connection
+    const socket = io(process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001', {
+      transports: ['websocket', 'polling']
+    });
 
-        setAudienceQuestions(mockData);
-      }
+    socketRef.current = socket;
+
+    socket.on('connect', () => {
+      console.log('🟢 Connected to WebSocket server');
+      setConnected(true);
+      
+      // Join the room for this question/poll
+      socket.emit('joinRoom', { 
+        roomId: questionId, 
+        userId: `moderator-${Date.now()}` 
+      });
+
+      // Request existing questions
+      socket.emit('getQuestions', { roomId: questionId });
+    });
+
+    socket.on('disconnect', () => {
+      console.log('🔴 Disconnected from WebSocket server');
+      setConnected(false);
+    });
+
+    // Listen for existing questions list
+    socket.on('questionsList', (questions: BackendQuestion[]) => {
+      console.log('📋 Received questions list:', questions);
+      const transformedQuestions = questions.map(transformQuestion);
+      setAudienceQuestions(transformedQuestions);
       setLoading(false);
-    }, 1000);
+    });
 
-    return () => clearTimeout(timer);
+    // Listen for new questions
+    socket.on('newQuestion', (question: BackendQuestion) => {
+      console.log('📝 New question received:', question);
+      const transformedQuestion = transformQuestion(question);
+      setAudienceQuestions(prev => [...prev, transformedQuestion]);
+    });
+
+    // Listen for question updates (upvotes, answered status, etc.)
+    socket.on('questionUpdated', (updatedQuestion: BackendQuestion) => {
+      console.log('🔄 Question updated:', updatedQuestion);
+      const transformedQuestion = transformQuestion(updatedQuestion);
+      setAudienceQuestions(prev => 
+        prev.map(q => q.id === updatedQuestion.id ? transformedQuestion : q)
+      );
+    });
+
+    // Listen for question replies
+    socket.on('questionReplied', (repliedQuestion: BackendQuestion) => {
+      console.log('💬 Question replied:', repliedQuestion);
+      const transformedQuestion = transformQuestion(repliedQuestion);
+      setAudienceQuestions(prev => 
+        prev.map(q => q.id === repliedQuestion.id ? transformedQuestion : q)
+      );
+    });
+
+    // Listen for question deletions
+    socket.on('questionDeleted', (deletedQuestionId: string) => {
+      console.log('🗑️ Question deleted:', deletedQuestionId);
+      setAudienceQuestions(prev => 
+        prev.filter(q => q.id !== deletedQuestionId)
+      );
+    });
+
+    socket.on('connect_error', (error) => {
+      console.error('❌ WebSocket connection error:', error);
+      setLoading(false);
+    });
+
+    return () => {
+      socket.disconnect();
+    };
   }, [questionId]);
 
   // Function to handle upvoting a question
-  const handleUpvote = (questionId: string) => {
-    setAudienceQuestions((prevQuestions) =>
-      prevQuestions.map((q) =>
-        q.id === questionId ? { ...q, upvotes: q.upvotes + 1 } : q
-      )
-    );
+  const handleUpvote = (audienceQuestionId: string) => {
+    if (socketRef.current && connected) {
+      socketRef.current.emit('upvoteQuestion', {
+        roomId: questionId,
+        questionId: audienceQuestionId
+      });
+    }
   };
 
   // Function to handle adding a reply to a question
-  const handleReply = (questionId: string, replyText: string) => {
-    const newReply: AudienceReply = {
-      id: `reply-${Date.now()}`,
-      audienceQuestionId: questionId,
-      text: replyText,
-      authorName: "You (Moderator)",
-      authorId: "current-moderator",
-      timestamp: new Date(),
-      isOfficial: true,
-    };
-
-    setAudienceQuestions((prevQuestions) =>
-      prevQuestions.map((q) =>
-        q.id === questionId ? { ...q, replies: [...q.replies, newReply] } : q
-      )
-    );
+  const handleReply = (audienceQuestionId: string, replyText: string) => {
+    if (socketRef.current && connected) {
+      socketRef.current.emit('replyToQuestion', {
+        roomId: questionId,
+        questionId: audienceQuestionId,
+        content: replyText
+      });
+    }
   };
 
   // Function to handle deleting a question
-  const handleDelete = (questionId: string) => {
-    setAudienceQuestions((prevQuestions) =>
-      prevQuestions.filter((q) => q.id !== questionId)
-    );
+  const handleDelete = (audienceQuestionId: string) => {
+    if (socketRef.current && connected) {
+      socketRef.current.emit('deleteQuestion', {
+        roomId: questionId,
+        questionId: audienceQuestionId
+      });
+    }
   };
 
   // Function to toggle answered status
-  const handleToggleAnswered = (questionId: string) => {
-    setAudienceQuestions((prevQuestions) =>
-      prevQuestions.map((q) =>
-        q.id === questionId ? { ...q, isAnswered: !q.isAnswered } : q
-      )
-    );
+  const handleToggleAnswered = (audienceQuestionId: string) => {
+    if (socketRef.current && connected) {
+      socketRef.current.emit('toggleAnswered', {
+        roomId: questionId,
+        questionId: audienceQuestionId
+      });
+    }
   };
 
   // Function to toggle hidden status
-  const handleToggleHidden = (questionId: string) => {
-    setAudienceQuestions((prevQuestions) =>
-      prevQuestions.map((q) =>
-        q.id === questionId ? { ...q, isHidden: !q.isHidden } : q
-      )
-    );
+  const handleToggleHidden = (audienceQuestionId: string) => {
+    if (socketRef.current && connected) {
+      socketRef.current.emit('toggleHidden', {
+        roomId: questionId,
+        questionId: audienceQuestionId
+      });
+    }
   };
 
   return {
     audienceQuestions,
     loading,
+    connected,
     handleUpvote,
     handleReply,
     handleDelete,

@@ -22,16 +22,8 @@ const QuestionsList: React.FC<QuestionsListProps> = ({
 
   const getQuestionTypeLabel = (type: Question["type"]) => {
     switch (type) {
-      case "multiple-choice":
-        return "Multiple Choice";
-      case "single-choice":
-        return "Single Choice";
       case "text":
         return "Open Text";
-      case "rating":
-        return "Rating";
-      case "audience-qa":
-        return "Audience Q&A";
       default:
         return type;
     }
@@ -39,34 +31,10 @@ const QuestionsList: React.FC<QuestionsListProps> = ({
 
   const getQuestionTypeIcon = (type: Question["type"]) => {
     switch (type) {
-      case "multiple-choice":
-        return (
-          <div className="w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center">
-            <span className="text-xs font-bold">MC</span>
-          </div>
-        );
-      case "single-choice":
-        return (
-          <div className="w-8 h-8 bg-green-100 text-green-600 rounded-full flex items-center justify-center">
-            <span className="text-xs font-bold">SC</span>
-          </div>
-        );
       case "text":
         return (
           <div className="w-8 h-8 bg-purple-100 text-purple-600 rounded-full flex items-center justify-center">
             <span className="text-xs font-bold">Aa</span>
-          </div>
-        );
-      case "rating":
-        return (
-          <div className="w-8 h-8 bg-yellow-100 text-yellow-600 rounded-full flex items-center justify-center">
-            <span className="text-xs font-bold">★</span>
-          </div>
-        );
-      case "audience-qa":
-        return (
-          <div className="w-8 h-8 bg-red-100 text-red-600 rounded-full flex items-center justify-center">
-            <span className="text-xs font-bold">Q&A</span>
           </div>
         );
       default:

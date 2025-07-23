@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Param, Get, Delete, BadRequestException } from '@nestjs/common';
+import { Controller, Post, Body, Param, Get, Delete, Headers } from '@nestjs/common';
 import { JoinRoomDto } from './dto/join-room.dto';
 import { TempUserService } from './temp-user.service';
 import { TempUserStoreService } from './redis-store/temp-user-store.service';
@@ -55,4 +55,15 @@ async setUser(@Body() setTempUserDto: SetTempUserDto) {
         const no = await this.tempUserStoreService.getRoomUserCount(roomId)
         return no
     }
+
+@Post('/room/:slug/join-moderator')
+async joinRoomAsModerator(@Param('slug') slug: string, @Headers('authorization') auth: string) {
+  const token = auth.replace('Bearer ', '');
+  return this.tempUserService.joinRoomAsModerator(slug, token);
+}
+
+@Delete('/temp-user/:userId/leave')
+async leaveRoom(@Param('userId') userId: string) {
+  return this.tempUserService.leaveRoom(userId);
+}
     }

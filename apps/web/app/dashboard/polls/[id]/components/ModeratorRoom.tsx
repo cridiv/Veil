@@ -19,7 +19,7 @@ import {
   UserPlus,
 } from "lucide-react";
 import { Question } from "../../../../types/poll";
-import { AudienceQuestion, AudienceReply } from "../../../../types/audience-qa";
+import { AudienceQuestion, AudienceReply } from "../../../../types/poll";
 
 interface ModeratorRoomProps {
   question: Question;
@@ -50,7 +50,7 @@ const ModeratorRoom: React.FC<ModeratorRoomProps> = ({
     "all"
   );
   const [searchTerm, setSearchTerm] = useState("");
-  const [activeAudience, setActiveAudience] = useState(24); // Mock active audience count
+  const [activeAudience, setActiveAudience] = useState(24);
   const [incomingQuestion, setIncomingQuestion] =
     useState<AudienceQuestion | null>(null);
 
