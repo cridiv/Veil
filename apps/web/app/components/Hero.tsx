@@ -4,7 +4,7 @@ import Link from "next/link";
 
 const Hero = () => {
   return (
-    <div className="relative min-h-[80vh] w-full bg-[rgb(25, 26, 31)]">
+    <div className="relative max-h-[100vh] md:max-h-[80vh] w-full bg-[rgb(25, 26, 31)] mb-0">
       {/* Background Image - Full Screen */}
       <div className="absolute inset-0 w-full h-full">
         <Image
@@ -17,9 +17,9 @@ const Hero = () => {
       </div>
 
       {/* Content Container */}
-      <div className="relative z-10 flex items-center justify-center min-h-screen w-full">
+      <div className="relative z-10 flex items-center justify-center min-h-screen md:max-h-[85vh] w-full">
         {/* Content Section */}
-        <div className="w-full max-w-4xl mx-auto mt-[0.5px] pt-[0.5px] md:mt-[0.5px] md:pt-[0.5px] md:text-center p-6 md:p-12">
+        <div className="w-full max-w-4xl mx-auto md:mt-0 md:pt-0 md:text-center p-6 md:p-12">
           <h1 className="text-4xl md:text-5xl font-bold text-white mb-4 leading-tight">
             Engage Your Audience in Real Time
             <br />
@@ -44,7 +44,6 @@ const Hero = () => {
           </div>
         </div>
       </div>
-
       {/* Overlay for better text visibility */}
       <div className="absolute inset-0 bg-black opacity-30"></div>
     </div>
