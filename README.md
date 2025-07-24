@@ -1,135 +1,132 @@
-# Turborepo starter
+Veil
+Veil is a real-time anonymous Q&A platform designed for events, livestreams, and interactive sessions. It empowers audiences to ask questions without revealing their identity, and gives moderators full control to filter, highlight, and respond — all in a sleek, live-updating interface.
 
-This Turborepo starter is maintained by the Turborepo core team.
+✨ Features
+Anonymous Q&A – Attendees can ask questions without logging in
 
-## Using this example
+Live WebSocket Updates – See questions in real time without refresh
 
-Run the following command:
+Moderator Dashboard – View, filter, answer, and hide questions
 
-```sh
-npx create-turbo@latest
-```
+Audience Upvoting – Surface popular questions via likes
 
-## What's inside?
+Poll Creation – Run simple polls to gather quick feedback
 
-This Turborepo includes the following packages/apps:
+Room Codes – Easily join sessions using a 6-character code
 
-### Apps and Packages
+Session Management – Organize and revisit rooms per event
 
-- `docs`: a [Next.js](https://nextjs.org/) app
-- `web`: another [Next.js](https://nextjs.org/) app
-- `@repo/ui`: a stub React component library shared by both `web` and `docs` applications
-- `@repo/eslint-config`: `eslint` configurations (includes `eslint-config-next` and `eslint-config-prettier`)
-- `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
+🛠️ Tech Stack
+Layer	Tech
+Frontend	Next.js 14, TailwindCSS, Shadcn UI, Lucide Icons
+Backend	NestJS (WebSocket + REST API)
+Database	PostgreSQL (via Supabase)
+Infra	Render (API), Vercel (Frontend)
+Realtime	WebSockets (via socket.io)
+Other	TypeScript, Turbo Monorepo, ESM Modules
 
-Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
+🚀 Getting Started
+1. Clone the Repository
+bash
+Copy
+Edit
+git clone https://github.com/cridiv/Veil.git
+cd Veil
+2. Install Dependencies
+bash
+Copy
+Edit
+npm install
+Or with pnpm:
 
-### Utilities
+bash
+Copy
+Edit
+pnpm install
+3. Set Up Environment Variables
+Create a .env file in the root and include:
 
-This Turborepo has some additional tools already setup for you:
+env
+Copy
+Edit
+# Supabase
+SUPABASE_URL=your-supabase-url
+SUPABASE_ANON_KEY=your-supabase-anon-key
 
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [ESLint](https://eslint.org/) for code linting
-- [Prettier](https://prettier.io) for code formatting
+# Frontend use
+NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
+Note: Be sure to also add these in Vercel and Render during deployment.
 
-### Build
+4. Run the App Locally
+Run both backend and frontend in separate terminals:
 
-To build all apps and packages, run the following command:
+Backend (NestJS)
 
-```
-cd my-turborepo
+bash
+Copy
+Edit
+cd apps/api
+npm run start:dev
+Frontend (Next.js)
 
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo build
+bash
+Copy
+Edit
+cd apps/web
+npm run dev
+Visit: http://localhost:3000
 
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo build
-yarn dlx turbo build
-pnpm exec turbo build
-```
+🌐 Deployment
+📡 Backend (Render)
+Connect repo on Render
 
-You can build a specific package by using a [filter](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters):
+Set root directory to apps/api
 
-```
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo build --filter=docs
+Add environment variables
 
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo build --filter=docs
-yarn exec turbo build --filter=docs
-pnpm exec turbo build --filter=docs
-```
+Build command:
 
-### Develop
+bash
+Copy
+Edit
+npm install && npm run build
+Start command:
 
-To develop all apps and packages, run the following command:
+bash
+Copy
+Edit
+npm run start:prod
+🧑‍💻 Frontend (Vercel)
+Connect repo on Vercel
 
-```
-cd my-turborepo
+Set root directory to apps/web
 
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo dev
+Add all .env variables
 
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo dev
-yarn exec turbo dev
-pnpm exec turbo dev
-```
+Deploy
 
-You can develop a specific package by using a [filter](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters):
+🤝 Contributing
+We welcome all contributions!
 
-```
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo dev --filter=web
+Fork the repo
 
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo dev --filter=web
-yarn exec turbo dev --filter=web
-pnpm exec turbo dev --filter=web
-```
+Create a branch: git checkout -b feat/your-feature-name
 
-### Remote Caching
+Make changes and commit: git commit -m "feat: your feature"
 
-> [!TIP]
-> Vercel Remote Cache is free for all plans. Get started today at [vercel.com](https://vercel.com/signup?/signup?utm_source=remote-cache-sdk&utm_campaign=free_remote_cache).
+Push the branch: git push origin feat/your-feature-name
 
-Turborepo can use a technique known as [Remote Caching](https://turborepo.com/docs/core-concepts/remote-caching) to share cache artifacts across machines, enabling you to share build caches with your team and CI/CD pipelines.
+Open a pull request 🎉
 
-By default, Turborepo will cache locally. To enable Remote Caching you will need an account with Vercel. If you don't have an account you can [create one](https://vercel.com/signup?utm_source=turborepo-examples), then enter the following commands:
+👨‍💻 Authors
+Aderemi Ademola – Backend Lead, Realtime Systems (X: @cridiv)
 
-```
-cd my-turborepo
+Peters Joshua – Frontend Lead, UX Engineer (X: @joshpet77)
 
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo login
+Oyedapo Kayode – Product Designer (X: @Kayode_96)
 
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo login
-yarn exec turbo login
-pnpm exec turbo login
-```
+📜 License
+This project is licensed under the MIT License.
 
-This will authenticate the Turborepo CLI with your [Vercel account](https://vercel.com/docs/concepts/personal-accounts/overview).
-
-Next, you can link your Turborepo to your Remote Cache by running the following command from the root of your Turborepo:
-
-```
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo link
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo link
-yarn exec turbo link
-pnpm exec turbo link
-```
-
-## Useful Links
-
-Learn more about the power of Turborepo:
-
-- [Tasks](https://turborepo.com/docs/crafting-your-repository/running-tasks)
-- [Caching](https://turborepo.com/docs/crafting-your-repository/caching)
-- [Remote Caching](https://turborepo.com/docs/core-concepts/remote-caching)
-- [Filtering](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters)
-- [Configuration Options](https://turborepo.com/docs/reference/configuration)
-- [CLI Usage](https://turborepo.com/docs/reference/command-line-reference)
+Built to make questions speak louder than names. 🫶
