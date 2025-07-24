@@ -124,7 +124,7 @@ We welcome all contributions!
 
 ## 👨‍💻 Authors
 
-* **Aderemi Ademola** – Backend Lead, Realtime Systems (X: [@cridiv](https://x.com/Crid_IV))
+* **Aderemi Ademola** – Backend Lead, Realtime Systems (X: [@crid_iv](https://x.com/Crid_IV))
 * **Peters Joshua** – Frontend Lead, UX Engineer (X: [@joshpet77](https://x.com/joshpet77))
 * **Oyedapo Kayode** – Product Designer (X: [@Kayode_96](https://x.com/Kayode_96))
 
