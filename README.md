@@ -82,9 +82,6 @@ pnpm run start:dev
 cd apps/web
 pnpm dev
 ```
-
-Visit: http://localhost:3000
-
 ## 🌐 Deployment
 
 ### 📡 Backend (Render)
