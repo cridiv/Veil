@@ -18,7 +18,7 @@ interface Question {
   user: string;
   question: string;
   timestamp: string;
-  likes: number;
+  upvotes: number;
   answered: boolean;
   answer?: string;
 }
@@ -255,21 +255,30 @@ const RoomClient = () => {
     setNewQuestion("");
   };
 
-  const handleLike = async (id: string) => {
-    const token = localStorage.getItem("auth_token");
+  useEffect(() => {
+  if (!roomId) return;
 
-    await fetch(`https://veil-1qpe.onrender.com/questions/${id}/like`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    console.log("questions", questions);
-    setQuestions(
-      questions.map((q) => (q.id === id ? { ...q, likes: q.likes + 1 } : q))
+  const handleQuestionUpdated = (updatedQuestion: Question) => {
+    setQuestions((prev) =>
+      prev.map((q) =>
+        q.id === updatedQuestion.id
+          ? { ...q, upvotes: updatedQuestion.upvotes || 0 }
+          : q
+      )
     );
   };
+
+  socket.on("questionUpdated", handleQuestionUpdated);
+
+  return () => {
+    socket.off("questionUpdated", handleQuestionUpdated);
+  };
+}, [roomId]);
+
+const handleLike = (questionId: string) => {
+  if (!socket) return;
+  socket.emit('upvoteQuestion', { roomId, questionId });
+};
 
   const handleVote = async (pollId: string, optionIndex: number) => {
     const token = localStorage.getItem("auth_token");
@@ -500,7 +509,7 @@ const RoomClient = () => {
                       className="text-xs sm:text-sm text-gray-600 hover:text-purple-600 flex items-center space-x-2"
                     >
                       <ThumbsUp className="w-3 h-3 sm:w-4 sm:h-4" />
-                      <span>{q.likes}</span>
+                      <span>{q.upvotes}</span>
                     </button>
                   </div>
                 ))
