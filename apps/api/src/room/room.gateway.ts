@@ -114,18 +114,19 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
     if (updated) {
       this.server.to(data.roomId).emit('questionReplied', updated);
     }
+    
 @SubscribeMessage('getQuestions')
 handleGetQuestions(
-  @MessageBody() roomId: string,
+  @MessageBody() data: any,
   @ConnectedSocket() client: Socket,
 ) {
-  if (!roomId || typeof roomId !== 'string') {
-    console.warn('❌ Invalid getQuestions payload:', roomId);
+  if (!data || typeof data !== 'object' || typeof data.roomId !== 'string') {
+    console.warn('❌ Invalid getQuestions payload:', data);
     return;
   }
 
-  console.log(`📋 Get questions request for room:`, roomId);
-  const questions = this.questionStore.getQuestions(roomId);
+  console.log(`📋 Valid Get questions request:`, data);
+  const questions = this.questionStore.getQuestions(data.roomId);
   client.emit('questionsList', questions);
 }
 
