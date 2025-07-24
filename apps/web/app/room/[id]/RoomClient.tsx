@@ -11,6 +11,7 @@ import {
   ThumbsUp,
   Clock,
   LogOut,
+  AlertCircle,
 } from "lucide-react";
 
 interface Question {
@@ -18,7 +19,7 @@ interface Question {
   user: string;
   question: string;
   timestamp: string;
-  likes: number;
+  upvotes: number;
   answered: boolean;
   answer?: string;
 }
@@ -50,7 +51,10 @@ const RoomClient = () => {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [polls, setPolls] = useState<Poll[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [rateLimitRemaining, setRateLimitRemaining] = useState(0);
+  const [rateLimitMessage, setRateLimitMessage] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const rateLimitIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const scrollToTop = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -59,6 +63,30 @@ const RoomClient = () => {
   useEffect(() => {
     scrollToTop();
   }, [questions]);
+
+  // Rate limit countdown effect
+  useEffect(() => {
+    if (rateLimitRemaining > 0) {
+      rateLimitIntervalRef.current = setInterval(() => {
+        setRateLimitRemaining((prev) => {
+          if (prev <= 1) {
+            setRateLimitMessage("");
+            if (rateLimitIntervalRef.current) {
+              clearInterval(rateLimitIntervalRef.current);
+            }
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+
+    return () => {
+      if (rateLimitIntervalRef.current) {
+        clearInterval(rateLimitIntervalRef.current);
+      }
+    };
+  }, [rateLimitRemaining]);
 
   useEffect(() => {
     const fetchRoom = async () => {
@@ -95,11 +123,18 @@ const RoomClient = () => {
     });
 
     socket.emit("getQuestions", roomId);
+    
     const handleNewQuestion = (question: Question) => {
       setQuestions((prev) => [question, ...prev]);
     };
 
+    const handleRateLimitError = (data: { message: string; remainingTime: number }) => {
+      setRateLimitMessage(data.message);
+      setRateLimitRemaining(data.remainingTime);
+    };
+
     socket.on("newQuestion", handleNewQuestion);
+    socket.on("rateLimitError", handleRateLimitError);
 
     const fetchPolls = async () => {
       const token = localStorage.getItem("auth_token");
@@ -117,6 +152,7 @@ const RoomClient = () => {
 
     return () => {
       socket.off("newQuestion", handleNewQuestion);
+      socket.off("rateLimitError", handleRateLimitError);
     };
   }, [roomId]);
 
@@ -238,8 +274,12 @@ const RoomClient = () => {
   };
 
   const handleSubmitQuestion = () => {
-    if (!newQuestion.trim() || !roomId || isRoomLoading) {
-      console.warn("Missing question or roomId");
+    if (!newQuestion.trim() || !roomId || isRoomLoading || rateLimitRemaining > 0) {
+      if (rateLimitRemaining > 0) {
+        console.warn("Rate limited - please wait");
+      } else {
+        console.warn("Missing question or roomId");
+      }
       return;
     }
 
@@ -255,21 +295,30 @@ const RoomClient = () => {
     setNewQuestion("");
   };
 
-  const handleLike = async (id: string) => {
-    const token = localStorage.getItem("auth_token");
+  useEffect(() => {
+  if (!roomId) return;
 
-    await fetch(`https://veil-1qpe.onrender.com/questions/${id}/like`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    console.log("questions", questions);
-    setQuestions(
-      questions.map((q) => (q.id === id ? { ...q, likes: q.likes + 1 } : q))
+  const handleQuestionUpdated = (updatedQuestion: Question) => {
+    setQuestions((prev) =>
+      prev.map((q) =>
+        q.id === updatedQuestion.id
+          ? { ...q, upvotes: updatedQuestion.upvotes || 0 }
+          : q
+      )
     );
   };
+
+  socket.on("questionUpdated", handleQuestionUpdated);
+
+  return () => {
+    socket.off("questionUpdated", handleQuestionUpdated);
+  };
+}, [roomId]);
+
+const handleLike = (questionId: string) => {
+  if (!socket) return;
+  socket.emit('upvoteQuestion', { roomId, questionId });
+};
 
   const handleVote = async (pollId: string, optionIndex: number) => {
     const token = localStorage.getItem("auth_token");
@@ -354,9 +403,31 @@ const RoomClient = () => {
             {/* Fixed input section at bottom */}
             <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-2 sm:p-4 shadow-lg z-50">
               <div className="max-w-4xl mx-auto">
+                {/* Rate limit notification */}
+                {rateLimitRemaining > 0 && (
+                  <div className="mb-3 p-2 sm:p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-center space-x-2">
+                    <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0" />
+                    <div className="flex-1">
+                      <p className="text-sm text-amber-800">
+                        {rateLimitMessage}
+                      </p>
+                    </div>
+                    <div className="flex items-center space-x-2 text-amber-700">
+                      <Clock className="w-3 h-3" />
+                      <span className="text-sm font-medium tabular-nums">
+                        {rateLimitRemaining}s
+                      </span>
+                    </div>
+                  </div>
+                )}
+
                 <div className="relative">
                   {/* Main input container */}
-                  <div className="flex items-center bg-gray-50 border border-gray-300 rounded-xl sm:rounded-2xl focus-within:border-purple-500 focus-within:bg-white transition-all duration-200">
+                  <div className={`flex items-center bg-gray-50 border rounded-xl sm:rounded-2xl focus-within:bg-white transition-all duration-200 ${
+                    rateLimitRemaining > 0 
+                      ? 'border-amber-300 focus-within:border-amber-400' 
+                      : 'border-gray-300 focus-within:border-purple-500'
+                  }`}>
                     <textarea
                       value={newQuestion}
                       onChange={(e) => setNewQuestion(e.target.value)}
@@ -366,8 +437,12 @@ const RoomClient = () => {
                           handleSubmitQuestion();
                         }
                       }}
-                      placeholder="Ask your question..."
-                      disabled={isRoomLoading}
+                      placeholder={
+                        rateLimitRemaining > 0 
+                          ? `Please wait ${rateLimitRemaining}s before sending another question...`
+                          : "Ask your question..."
+                      }
+                      disabled={isRoomLoading || rateLimitRemaining > 0}
                       rows={1}
                       className="flex-1 p-2 sm:p-4 pr-16 sm:pr-24 bg-transparent border-none rounded-xl sm:rounded-2xl focus:outline-none placeholder-gray-500 text-gray-900 resize-none overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
                       style={{
@@ -387,7 +462,7 @@ const RoomClient = () => {
                       <button
                         onClick={handleImproveAi}
                         disabled={
-                          isRoomLoading || isLoading || !newQuestion.trim()
+                          isRoomLoading || isLoading || !newQuestion.trim() || rateLimitRemaining > 0
                         }
                         className="flex cursor-pointer items-center space-x-1 px-2 py-1 sm:px-3 sm:py-1.5 bg-gradient-to-r from-blue-500 to-purple-600 text-white text-xs font-medium rounded-full hover:from-blue-600 hover:to-purple-700 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed transition-all duration-200 shadow-sm"
                       >
@@ -433,10 +508,18 @@ const RoomClient = () => {
                       {/* Send button */}
                       <button
                         onClick={handleSubmitQuestion}
-                        disabled={isRoomLoading || !newQuestion.trim()}
-                        className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 bg-purple-600 text-white rounded-full hover:bg-purple-700 disabled:bg-purple-300 disabled:cursor-not-allowed transition-all duration-200 shadow-sm"
+                        disabled={isRoomLoading || !newQuestion.trim() || rateLimitRemaining > 0}
+                        className={`flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 text-white rounded-full transition-all duration-200 shadow-sm ${
+                          rateLimitRemaining > 0
+                            ? 'bg-amber-400 cursor-not-allowed'
+                            : 'bg-purple-600 hover:bg-purple-700 disabled:bg-purple-300 disabled:cursor-not-allowed'
+                        }`}
                       >
-                        <SendHorizonal className="w-3 h-3 sm:w-4 sm:h-4" />
+                        {rateLimitRemaining > 0 ? (
+                          <span className="text-xs font-medium tabular-nums">{rateLimitRemaining}</span>
+                        ) : (
+                          <SendHorizonal className="w-3 h-3 sm:w-4 sm:h-4" />
+                        )}
                       </button>
                     </div>
                   </div>
@@ -500,7 +583,7 @@ const RoomClient = () => {
                       className="text-xs sm:text-sm text-gray-600 hover:text-purple-600 flex items-center space-x-2"
                     >
                       <ThumbsUp className="w-3 h-3 sm:w-4 sm:h-4" />
-                      <span>{q.likes}</span>
+                      <span>{q.upvotes}</span>
                     </button>
                   </div>
                 ))
