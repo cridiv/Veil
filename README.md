@@ -1,132 +1,140 @@
-Veil
+# Veil
+
 Veil is a real-time anonymous Q&A platform designed for events, livestreams, and interactive sessions. It empowers audiences to ask questions without revealing their identity, and gives moderators full control to filter, highlight, and respond — all in a sleek, live-updating interface.
 
-✨ Features
-Anonymous Q&A – Attendees can ask questions without logging in
+## ✨ Features
 
-Live WebSocket Updates – See questions in real time without refresh
+- **Anonymous Q&A** – Attendees can ask questions without logging in
+- **Live WebSocket Updates** – See questions in real time without refresh
+- **Moderator Dashboard** – View, filter, answer, and hide questions
+- **Audience Upvoting** – Surface popular questions via likes
+- **Poll Creation** – Run simple polls to gather quick feedback
+- **Room Codes** – Easily join sessions using a 6-character code
+- **Session Management** – Organize and revisit rooms per event
 
-Moderator Dashboard – View, filter, answer, and hide questions
+## 🛠️ Tech Stack
 
-Audience Upvoting – Surface popular questions via likes
+| Layer          | Tech                          |
+|----------------|-------------------------------|
+| Frontend       | Next.js 14, TailwindCSS, Shadcn UI, Lucide Icons |
+| Backend        | NestJS (WebSocket + REST API) |
+| Database       | Prisma + PostgreSQL           |
+| Authentication | Passport.js                   |
+| Infra          | Render (API), Vercel (Frontend) |
+| Realtime       | WebSockets (via socket.io)    |
+| Other          | TypeScript, Turbo Monorepo, ESM Modules |
 
-Poll Creation – Run simple polls to gather quick feedback
+## 🚀 Getting Started
 
-Room Codes – Easily join sessions using a 6-character code
-
-Session Management – Organize and revisit rooms per event
-
-🛠️ Tech Stack
-Layer	Tech
-Frontend	Next.js 14, TailwindCSS, Shadcn UI, Lucide Icons
-Backend	NestJS (WebSocket + REST API)
-Database	PostgreSQL (via Supabase)
-Infra	Render (API), Vercel (Frontend)
-Realtime	WebSockets (via socket.io)
-Other	TypeScript, Turbo Monorepo, ESM Modules
-
-🚀 Getting Started
-1. Clone the Repository
-bash
-Copy
-Edit
+### 1. Clone the Repository
+```bash
 git clone https://github.com/cridiv/Veil.git
 cd Veil
-2. Install Dependencies
-bash
-Copy
-Edit
-npm install
-Or with pnpm:
+```
 
-bash
-Copy
-Edit
+### 2. Install Dependencies
+```bash
 pnpm install
-3. Set Up Environment Variables
-Create a .env file in the root and include:
+```
 
-env
-Copy
-Edit
-# Supabase
-SUPABASE_URL=your-supabase-url
-SUPABASE_ANON_KEY=your-supabase-anon-key
 
-# Frontend use
-NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
-Note: Be sure to also add these in Vercel and Render during deployment.
+### 3. Set Up Environment Variables
+Create a `.env` file in the root and include:
+```env
+# Database
+DATABASE_URL=postgresql://username:password@localhost:5432/veil_db
 
-4. Run the App Locally
+# Authentication
+JWT_SECRET=your-jwt-secret-key
+SESSION_SECRET=your-session-secret-key
+
+# OAuth (if using social login)
+GOOGLE_CLIENT_ID=your-google-client-id
+GOOGLE_CLIENT_SECRET=your-google-client-secret
+
+# App Configuration
+NODE_ENV=development
+PORT=5000
+FRONTEND_URL=http://localhost:3000
+```
+
+**Note:** Be sure to also add these in Vercel and Render during deployment.
+
+### 4. Database Setup
+Set up your PostgreSQL database and run migrations:
+```bash
+cd apps/api
+pnpm run db:migrate
+pnpm run db:seed  # Optional: seed with sample data
+```
+
+### 5. Run the App Locally
 Run both backend and frontend in separate terminals:
 
-Backend (NestJS)
-
-bash
-Copy
-Edit
+**Backend (NestJS)**
+```bash
 cd apps/api
-npm run start:dev
-Frontend (Next.js)
+pnpm run start:dev
+```
 
-bash
-Copy
-Edit
+**Frontend (Next.js)**
+```bash
 cd apps/web
-npm run dev
+pnpm dev
+```
+
 Visit: http://localhost:3000
 
-🌐 Deployment
-📡 Backend (Render)
-Connect repo on Render
+## 🌐 Deployment
 
-Set root directory to apps/api
+### 📡 Backend (Render)
+1. Connect repo on Render
+2. Set root directory to `apps/api`
+3. Add environment variables
+4. Build command:
+```bash
+pnpm install && pnpm run build
+```
+5. Start command:
+```bash
+pnpm run start:prod
+```
 
-Add environment variables
+### 🌍 Frontend (Vercel)
+1. Connect repo on Vercel
+2. Set root directory to `apps/web`
+3. Add all environment variables
+4. Deploy
 
-Build command:
+## 🔐 Authentication
 
-bash
-Copy
-Edit
-npm install && npm run build
-Start command:
+Veil uses Passport.js for flexible authentication strategies:
 
-bash
-Copy
-Edit
-npm run start:prod
-🧑‍💻 Frontend (Vercel)
-Connect repo on Vercel
+- **Local Strategy** – Username/password authentication for moderators
+- **JWT Tokens** – Secure session management
+- **Anonymous Access** – No authentication required for audience participation
+- **OAuth Support** – Google, GitHub, and other providers (optional)
 
-Set root directory to apps/web
+## 🤝 Contributing
 
-Add all .env variables
-
-Deploy
-
-🤝 Contributing
 We welcome all contributions!
 
-Fork the repo
+1. Fork the repo
+2. Create a branch: `git checkout -b feat/your-feature-name`
+3. Make changes and commit: `git commit -m "feat: your feature"`
+4. Push the branch: `git push origin feat/your-feature-name`
+5. Open a pull request 🎉
 
-Create a branch: git checkout -b feat/your-feature-name
+## 👨‍💻 Authors
 
-Make changes and commit: git commit -m "feat: your feature"
+* **Aderemi Ademola** – Backend Lead, Realtime Systems (X: [@cridiv](https://x.com/cridiv))
+* **Peters Joshua** – Frontend Lead, UX Engineer (X: [@joshpet77](https://x.com/joshpet77))
+* **Oyedapo Kayode** – Product Designer (X: [@Kayode_96](https://x.com/Kayode_96))
 
-Push the branch: git push origin feat/your-feature-name
+## 📜 License
 
-Open a pull request 🎉
+This project is licensed under the **MIT License**.
 
-👨‍💻 Authors
-Aderemi Ademola – Backend Lead, Realtime Systems (X: @cridiv)
-
-Peters Joshua – Frontend Lead, UX Engineer (X: @joshpet77)
-
-Oyedapo Kayode – Product Designer (X: @Kayode_96)
-
-📜 License
-This project is licensed under the MIT License.
+---
 
 Built to make questions speak louder than names. 🫶
