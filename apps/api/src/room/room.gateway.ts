@@ -95,29 +95,30 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @SubscribeMessage('replyToQuestion')
-  handleReplyToQuestion(
-    @MessageBody() data: { roomId: string; questionId: string; content: string },
-    @ConnectedSocket() client: Socket,
-  ) {
-    if (client.data.role !== 'moderator') {
-      console.warn('🚫 Non-moderator attempted to reply.');
-      client.emit('error', { message: 'Unauthorized action' });
-      return;
-    }
+handleReplyToQuestion(
+  @MessageBody() data: { roomId: string; questionId: string; content: string },
+  @ConnectedSocket() client: Socket,
+) {
+  if (client.data.role !== 'moderator') {
+    console.warn('🚫 Non-moderator attempted to reply.');
+    client.emit('error', { message: 'Unauthorized action' });
+    return;
+  }
 
-    const updated = this.questionStore.answerQuestion(
-      data.roomId,
-      data.questionId,
-      data.content,
-    );
+  const updated = this.questionStore.answerQuestion(
+    data.roomId,
+    data.questionId,
+    data.content,
+  );
 
-    if (updated) {
-      this.server.to(data.roomId).emit('questionReplied', updated);
-    }
-    
+  if (updated) {
+    this.server.to(data.roomId).emit('questionReplied', updated);
+  }
+}
+
 @SubscribeMessage('getQuestions')
 handleGetQuestions(
-  @MessageBody() data: any,
+  @MessageBody() data: { roomId: string },
   @ConnectedSocket() client: Socket,
 ) {
   if (!data || typeof data !== 'object' || typeof data.roomId !== 'string') {
@@ -129,6 +130,7 @@ handleGetQuestions(
   const questions = this.questionStore.getQuestions(data.roomId);
   client.emit('questionsList', questions);
 }
+
 
   @SubscribeMessage('upvoteQuestion')
   handleUpvoteQuestion(
