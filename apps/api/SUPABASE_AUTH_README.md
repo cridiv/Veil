@@ -36,7 +36,7 @@ This project has been refactored to use Supabase for authentication instead of P
    ```
    SUPABASE_URL=https://your-project-id.supabase.co
    SUPABASE_KEY=your-supabase-anon-key
-   AUTH_REDIRECT_URL=http://localhost:5000/auth/callback
+   AUTH_REDIRECT_URL=https://veil-1qpe.onrender.com/auth/callback
    JWT_SECRET=your-jwt-secret
    ```
 

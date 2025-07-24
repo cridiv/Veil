@@ -16,21 +16,21 @@ const PollDetailPage = () => {
   const [poll, setPoll] = useState<Poll | null>(null);
   const [audienceQuestions, setAudienceQuestions] = useState<Question[]>([]);
 
- useEffect(() => {
-  const roomId = pollId;
+  useEffect(() => {
+    const roomId = pollId;
 
-  socket.emit("joinRoom", { roomId, userId: "moderator" });
+    socket.emit("joinRoom", { roomId, userId: "moderator" });
 
-  socket.emit("getQuestions", { roomId });
+    socket.emit("getQuestions", { roomId });
 
-  socket.on("questionsList", (data) => {
-    setAudienceQuestions(data);
-    setIsLoading(false);
-  });
-  return () => {
-    socket.off("questionsList");
-    socket.disconnect();
-  };
+    socket.on("questionsList", (data) => {
+      setAudienceQuestions(data);
+      setIsLoading(false);
+    });
+    return () => {
+      socket.off("questionsList");
+      socket.disconnect();
+    };
   }, [pollId]);
 
   if (isLoading) return <LoadingSkeleton />;
@@ -38,7 +38,9 @@ const PollDetailPage = () => {
   if (!poll || audienceQuestions.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-screen">
-        <h1 className="text-2xl font-bold text-red-600">Audience Q&A not found</h1>
+        <h1 className="text-2xl font-bold text-red-600">
+          Audience Q&A not found
+        </h1>
         <button
           onClick={() => router.back()}
           className="mt-4 px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700"

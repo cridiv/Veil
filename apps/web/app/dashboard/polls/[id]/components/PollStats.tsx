@@ -10,7 +10,7 @@ interface PollStatsProps {
 
 const PollStats: React.FC<PollStatsProps> = ({ poll }) => {
   const [activeUsers, setActiveUsers] = useState<number>(0);
-    const getStatusColor = (status: string) => {
+  const getStatusColor = (status: string) => {
     switch (status) {
       case "active":
         return "bg-green-100 text-green-800";
@@ -24,34 +24,40 @@ const PollStats: React.FC<PollStatsProps> = ({ poll }) => {
   };
 
   useEffect(() => {
-  const fetchActiveUsers = async () => {
-    try {
-      const token = localStorage.getItem("auth_token");
-      if (!token) return;
-      
-      const roomRes = await fetch(`http://localhost:5000/rooms/${poll.id}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+    const fetchActiveUsers = async () => {
+      try {
+        const token = localStorage.getItem("auth_token");
+        if (!token) return;
 
-      if (!roomRes.ok) throw new Error("Failed to fetch room by slug");
-      const room = await roomRes.json();
+        const roomRes = await fetch(
+          `https://veil-1qpe.onrender.com/rooms/${poll.id}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
 
-      const userCountRes = await fetch(`http://localhost:5000/user/room/${room.id}/no`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+        if (!roomRes.ok) throw new Error("Failed to fetch room by slug");
+        const room = await roomRes.json();
 
-      if (!userCountRes.ok) throw new Error("Failed to fetch user count");
-      const count = await userCountRes.json();
+        const userCountRes = await fetch(
+          `https://veil-1qpe.onrender.com/user/room/${room.id}/no`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
 
-      setActiveUsers(typeof count === "number" ? count : 0);
-    } catch (err) {
-      console.error("Error getting active user count:", err);
-      setActiveUsers(0);
-    }
-  };
+        if (!userCountRes.ok) throw new Error("Failed to fetch user count");
+        const count = await userCountRes.json();
 
-  fetchActiveUsers();
-}, [poll.id]);
+        setActiveUsers(typeof count === "number" ? count : 0);
+      } catch (err) {
+        console.error("Error getting active user count:", err);
+        setActiveUsers(0);
+      }
+    };
+
+    fetchActiveUsers();
+  }, [poll.id]);
 
   return (
     <div className="bg-white rounded-lg shadow p-6">

@@ -16,89 +16,101 @@ const PollsSection: React.FC = () => {
   );
   const [searchQuery, setSearchQuery] = useState("");
 
-useEffect(() => {
-  const fetchPolls = async () => {
-    try {
-      const token = localStorage.getItem("auth_token");
-      if (!token) {
-        console.error("No auth token found");
-        return;
+  useEffect(() => {
+    const fetchPolls = async () => {
+      try {
+        const token = localStorage.getItem("auth_token");
+        if (!token) {
+          console.error("No auth token found");
+          return;
+        }
+
+        // 1. Fetch all rooms
+        const res = await fetch("https://veil-1qpe.onrender.com/rooms", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (!res.ok) {
+          throw new Error("Failed to fetch rooms");
+        }
+
+        const rooms = await res.json();
+
+        const pollsWithUserCounts = await Promise.all(
+          rooms.map(async (room: any) => {
+            try {
+              let userCount = 0;
+
+              try {
+                const countRes = await fetch(
+                  `https://veil-1qpe.onrender.com/user/room/${room.id}/no`,
+                  {
+                    headers: {
+                      Authorization: `Bearer ${token}`,
+                    },
+                  }
+                );
+
+                if (!countRes.ok) {
+                  throw new Error(
+                    `Failed to fetch user count for room ${room.id}`
+                  );
+                }
+
+                const countData = await countRes.json();
+
+                if (typeof countData === "number") {
+                  userCount = countData;
+                } else {
+                  console.warn("Unexpected count response:", countData);
+                }
+              } catch (err) {
+                console.error("Error fetching user count:", err);
+              }
+
+              return {
+                id: room.id,
+                name: room.title,
+                slug: room.slug,
+                description: room.description,
+                createdAt: room.createdAt
+                  ? new Date(room.createdAt)
+                  : new Date(),
+                responses: userCount,
+                status: "active",
+              };
+            } catch (userErr) {
+              console.error(
+                `Failed to fetch users for room ${room.id}`,
+                userErr
+              );
+
+              return {
+                id: room.id,
+                name: room.title,
+                slug: room.slug,
+                description: room.description,
+                createdAt: room.createdAt
+                  ? new Date(room.createdAt)
+                  : new Date(),
+                responses: 0,
+                status: "active",
+              };
+            }
+          })
+        );
+
+        // 3. Update state
+        setPolls(pollsWithUserCounts);
+      } catch (err) {
+        console.error("Error fetching polls:", err);
       }
+    };
 
-      // 1. Fetch all rooms
-      const res = await fetch("http://localhost:5000/rooms", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (!res.ok) {
-        throw new Error("Failed to fetch rooms");
-      }
-
-      const rooms = await res.json();
-
-      const pollsWithUserCounts = await Promise.all(
-        rooms.map(async (room: any) => {
-          try {
-            let userCount = 0;
-
-try {
-  const countRes = await fetch(`http://localhost:5000/user/room/${room.id}/no`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-
-  if (!countRes.ok) {
-    throw new Error(`Failed to fetch user count for room ${room.id}`);
-  }
-
-  const countData = await countRes.json();
-
-  if (typeof countData === "number") {
-    userCount = countData;
-  } else {
-    console.warn("Unexpected count response:", countData);
-  }
-} catch (err) {
-  console.error("Error fetching user count:", err);
-}
-
-            return {
-              id: room.id,
-              name: room.title,
-              slug: room.slug,
-              description: room.description,
-              createdAt: room.createdAt ? new Date(room.createdAt) : new Date(),
-              responses: userCount,
-              status: "active",
-            };
-          } catch (userErr) {
-            console.error(`Failed to fetch users for room ${room.id}`, userErr);
-
-            return {
-              id: room.id,
-              name: room.title,
-              slug: room.slug,
-              description: room.description,
-              createdAt: room.createdAt ? new Date(room.createdAt) : new Date(),
-              responses: 0,
-              status: "active",
-            };
-          }
-        })
-      );
-
-      // 3. Update state
-      setPolls(pollsWithUserCounts);
-    } catch (err) {
-      console.error("Error fetching polls:", err);
-    }
-  };
-
-  fetchPolls();
-}, []);
+    fetchPolls();
+  }, []);
   // Filter polls based on status and search query
   const filteredPolls = polls.filter((poll) => {
     // Filter by status

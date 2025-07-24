@@ -66,9 +66,12 @@ const RoomClient = () => {
         const token = localStorage.getItem("auth_token");
         if (!token) return;
 
-        const res = await fetch(`http://localhost:5000/rooms/${roomId}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const res = await fetch(
+          `https://veil-1qpe.onrender.com/rooms/${roomId}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
 
         const room = await res.json();
         setIsRoomLoading(false);
@@ -85,12 +88,11 @@ const RoomClient = () => {
 
     const userId = localStorage.getItem("temp_userId") ?? "guest";
     const isModerator = localStorage.getItem("is_moderator") === "true";
-    socket.emit('joinRoom', {
-  roomId: roomId,
-  userId: userId,
-  role: isModerator ? 'moderator' : 'user',
-});
-
+    socket.emit("joinRoom", {
+      roomId: roomId,
+      userId: userId,
+      role: isModerator ? "moderator" : "user",
+    });
 
     socket.emit("getQuestions", roomId);
     const handleNewQuestion = (question: Question) => {
@@ -101,9 +103,12 @@ const RoomClient = () => {
 
     const fetchPolls = async () => {
       const token = localStorage.getItem("auth_token");
-      const res = await fetch(`http://localhost:5000/rooms/${roomId}/polls`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await fetch(
+        `https://veil-1qpe.onrender.com/rooms/${roomId}/polls`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
 
       const data = await res.json();
       setPolls(data);
@@ -232,28 +237,28 @@ const RoomClient = () => {
     }
   };
 
-const handleSubmitQuestion = () => {
-  if (!newQuestion.trim() || !roomId || isRoomLoading) {
-    console.warn("Missing question or roomId");
-    return;
-  }
+  const handleSubmitQuestion = () => {
+    if (!newQuestion.trim() || !roomId || isRoomLoading) {
+      console.warn("Missing question or roomId");
+      return;
+    }
 
     const userId = localStorage.getItem("temp_userId");
-  const username = localStorage.getItem("temp_username");
+    const username = localStorage.getItem("temp_username");
 
-  socket.emit("askQuestion", {
-    roomId,
+    socket.emit("askQuestion", {
+      roomId,
       userId: userId ?? "anonymous",
       question: newQuestion,
-  });
+    });
 
-  setNewQuestion("");
-};
+    setNewQuestion("");
+  };
 
   const handleLike = async (id: string) => {
     const token = localStorage.getItem("auth_token");
 
-    await fetch(`http://localhost:5000/questions/${id}/like`, {
+    await fetch(`https://veil-1qpe.onrender.com/questions/${id}/like`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,
@@ -270,7 +275,7 @@ const handleSubmitQuestion = () => {
     const token = localStorage.getItem("auth_token");
 
     try {
-      await fetch(`http://localhost:5000/polls/${pollId}/vote`, {
+      await fetch(`https://veil-1qpe.onrender.com/polls/${pollId}/vote`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -280,9 +285,12 @@ const handleSubmitQuestion = () => {
       });
 
       // re-fetch poll results
-      const res = await fetch(`http://localhost:5000/rooms/${roomId}/polls`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await fetch(
+        `https://veil-1qpe.onrender.com/rooms/${roomId}/polls`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
       const updated = await res.json();
       setPolls(updated);
     } catch (err) {

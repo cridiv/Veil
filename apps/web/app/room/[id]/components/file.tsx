@@ -60,9 +60,12 @@ const RoomPage = () => {
         const token = localStorage.getItem("auth_token");
         if (!token) return;
 
-        const res = await fetch(`http://localhost:5000/rooms/slug/${slug}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const res = await fetch(
+          `https://veil-1qpe.onrender.com/rooms/slug/${slug}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
 
         if (!res.ok) throw new Error("Failed to fetch room");
 
@@ -82,7 +85,7 @@ const RoomPage = () => {
     const fetchQuestions = async () => {
       const token = localStorage.getItem("auth_token");
       const res = await fetch(
-        `http://localhost:5000/rooms/${roomId}/questions`,
+        `https://veil-1qpe.onrender.com/rooms/${roomId}/questions`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -94,9 +97,12 @@ const RoomPage = () => {
 
     const fetchPolls = async () => {
       const token = localStorage.getItem("auth_token");
-      const res = await fetch(`http://localhost:5000/rooms/${roomId}/polls`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await fetch(
+        `https://veil-1qpe.onrender.com/rooms/${roomId}/polls`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
 
       const data = await res.json();
       setPolls(data);
@@ -230,7 +236,7 @@ const RoomPage = () => {
 
     try {
       const res = await fetch(
-        `http://localhost:5000/rooms/${roomId}/questions`,
+        `https://veil-1qpe.onrender.com/rooms/${roomId}/questions`,
         {
           method: "POST",
           headers: {
@@ -254,7 +260,7 @@ const RoomPage = () => {
   const handleLike = async (id: string) => {
     const token = localStorage.getItem("auth_token");
 
-    await fetch(`http://localhost:5000/questions/${id}/like`, {
+    await fetch(`https://veil-1qpe.onrender.com/questions/${id}/like`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,
@@ -270,7 +276,7 @@ const RoomPage = () => {
     const token = localStorage.getItem("auth_token");
 
     try {
-      await fetch(`http://localhost:5000/polls/${pollId}/vote`, {
+      await fetch(`https://veil-1qpe.onrender.com/polls/${pollId}/vote`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -280,9 +286,12 @@ const RoomPage = () => {
       });
 
       // re-fetch poll results
-      const res = await fetch(`http://localhost:5000/rooms/${roomId}/polls`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await fetch(
+        `https://veil-1qpe.onrender.com/rooms/${roomId}/polls`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
       const updated = await res.json();
       setPolls(updated);
     } catch (err) {
