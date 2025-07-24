@@ -15,17 +15,17 @@ export class TwitterStrategy extends PassportStrategy(Strategy, 'twitter') {
     });
   }
 
-  async validate(
-    accessToken: string,
-    refreshToken: string,
-    profile: any,
-  ): Promise<any> {
-    const { id, username, displayName, emails } = profile;
-    return {
-      id,
-      username,
-      displayName,
-      email: emails[0].value,
-    };
-  }
+async validate(
+  accessToken: string,
+  refreshToken: string,
+  profile: any,
+): Promise<any> {
+  const { id, username, displayName, emails } = profile;
+  return {
+    id,
+    username,
+    displayName,
+    email: emails?.[0]?.value || null,
+  };
+}
 }
