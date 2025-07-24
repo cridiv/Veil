@@ -53,6 +53,7 @@ const RoomClient = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [rateLimitRemaining, setRateLimitRemaining] = useState(0);
   const [rateLimitMessage, setRateLimitMessage] = useState("");
+  const [userCount, setUserCount] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const rateLimitIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -148,7 +149,44 @@ const RoomClient = () => {
       const data = await res.json();
       setPolls(data);
     };
+
+    const fetchUserCount = async () => {
+      try {
+        const token = localStorage.getItem("auth_token");
+        if (!token) {
+          console.error("No auth token found");
+          return;
+        }
+
+        const countRes = await fetch(
+          `https://veil-1qpe.onrender.com/user/room/${roomId}/no`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        if (!countRes.ok) {
+          throw new Error(`Failed to fetch user count for room ${roomId}`);
+        }
+
+        const countData = await countRes.json();
+
+        if (typeof countData === "number") {
+          setUserCount(countData);
+        } else {
+          console.warn("Unexpected count response:", countData);
+          setUserCount(0);
+        }
+      } catch (err) {
+        console.error("Error fetching user count:", err);
+        setUserCount(0);
+      }
+    };
+
     fetchPolls();
+    fetchUserCount();
 
     return () => {
       socket.off("newQuestion", handleNewQuestion);
@@ -296,29 +334,29 @@ const RoomClient = () => {
   };
 
   useEffect(() => {
-  if (!roomId) return;
+    if (!roomId) return;
 
-  const handleQuestionUpdated = (updatedQuestion: Question) => {
-    setQuestions((prev) =>
-      prev.map((q) =>
-        q.id === updatedQuestion.id
-          ? { ...q, upvotes: updatedQuestion.upvotes || 0 }
-          : q
-      )
-    );
+    const handleQuestionUpdated = (updatedQuestion: Question) => {
+      setQuestions((prev) =>
+        prev.map((q) =>
+          q.id === updatedQuestion.id
+            ? { ...q, upvotes: updatedQuestion.upvotes || 0 }
+            : q
+        )
+      );
+    };
+
+    socket.on("questionUpdated", handleQuestionUpdated);
+
+    return () => {
+      socket.off("questionUpdated", handleQuestionUpdated);
+    };
+  }, [roomId]);
+
+  const handleLike = (questionId: string) => {
+    if (!socket) return;
+    socket.emit('upvoteQuestion', { roomId, questionId });
   };
-
-  socket.on("questionUpdated", handleQuestionUpdated);
-
-  return () => {
-    socket.off("questionUpdated", handleQuestionUpdated);
-  };
-}, [roomId]);
-
-const handleLike = (questionId: string) => {
-  if (!socket) return;
-  socket.emit('upvoteQuestion', { roomId, questionId });
-};
 
   const handleVote = async (pollId: string, optionIndex: number) => {
     const token = localStorage.getItem("auth_token");
@@ -363,6 +401,7 @@ const handleLike = (questionId: string) => {
             </div>
             <div className="flex items-center space-x-1">
               <Users className="w-3 h-3 sm:w-4 sm:h-4" />
+              <span className="text-xs sm:text-sm font-medium">{userCount}</span>
               <span className="hidden sm:inline">Live</span>
             </div>
             <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
