@@ -126,11 +126,13 @@ handleGetQuestions(
 }
 
 
-  @SubscribeMessage('upvoteQuestion')
+ @SubscribeMessage('upvoteQuestion')
   handleUpvoteQuestion(
-    @MessageBody() data: { roomId: string; questionId: string },
+    @MessageBody() data: { roomId: string; questionId: string; userId: string },
+    @ConnectedSocket() client: Socket,
   ) {
-    const updated = this.questionStore.upvoteQuestion(data.roomId, data.questionId);
+    const userId = data.userId || client.data.userId;
+    const updated = this.questionStore.upvoteQuestion(data.roomId, data.questionId, userId);
     if (updated) {
       this.server.to(data.roomId).emit('questionUpdated', updated);
     }
