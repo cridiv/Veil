@@ -26,6 +26,7 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   // Poll management
   private pollTimers = new Map<string, NodeJS.Timeout>();
+  private activePollsStore = new Map<string, any[]>(); // Store active polls by roomId
   private readonly POLL_DURATION_MS = 120000; // 2 minutes
 
   constructor(private readonly questionStore: QuestionStoreService) {}
@@ -156,6 +157,11 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     this.pollTimers.set(pollId, timer);
 
+    // Store the poll in memory (you'd save to database here)
+    const roomPolls = this.activePollsStore.get(data.roomId) || [];
+    roomPolls.push(newPoll);
+    this.activePollsStore.set(data.roomId, roomPolls);
+
     // Emit to all users in the room
     this.server.to(data.roomId).emit('newPoll', newPoll);
     console.log(`📊 Poll created: ${pollId} in room: ${data.roomId}`);
@@ -167,17 +173,53 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
     data: { roomId: string; pollId: string; optionId: string; userId: string },
     @ConnectedSocket() client: Socket,
   ) {
-    // Here you would typically interact with your database through a service
-    // For now, I'll emit the vote event
+    // Find the poll and add the vote
+    const roomPolls = this.activePollsStore.get(data.roomId) || [];
+    const pollIndex = roomPolls.findIndex(poll => poll.id === data.pollId);
+    
+    if (pollIndex === -1) {
+      client.emit('pollError', { message: 'Poll not found' });
+      return;
+    }
+
+    const poll = roomPolls[pollIndex];
+    const optionIndex = poll.options.findIndex((opt: any) => opt.id === data.optionId);
+    
+    if (optionIndex === -1) {
+      client.emit('pollError', { message: 'Poll option not found' });
+      return;
+    }
+
+    // Check if user already voted (prevent duplicate votes)
+    const existingVoteIndex = poll.options[optionIndex].votes.findIndex(
+      (vote: any) => vote.voterId === data.userId
+    );
+
+    if (existingVoteIndex !== -1) {
+      client.emit('pollError', { message: 'You have already voted on this poll' });
+      return;
+    }
+
+    // Add the vote
     const voteData = {
-      pollId: data.pollId,
-      optionId: data.optionId,
+      id: uuidv4(),
       voterId: data.userId,
       timestamp: new Date().toISOString()
     };
 
+    poll.options[optionIndex].votes.push(voteData);
+    
+    // Update the stored poll
+    roomPolls[pollIndex] = poll;
+    this.activePollsStore.set(data.roomId, roomPolls);
+
     // Emit to all users in the room
-    this.server.to(data.roomId).emit('pollVoteAdded', voteData);
+    this.server.to(data.roomId).emit('pollVoteAdded', {
+      pollId: data.pollId,
+      optionId: data.optionId,
+      voterId: data.userId,
+      timestamp: voteData.timestamp
+    });
     
     // Send confirmation to voter
     client.emit('voteConfirmed', { 
@@ -199,9 +241,18 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
 
     console.log(`📊 Get active polls request:`, data);
-    // Here you would fetch from your database service
-    // For now, sending empty array - you'll replace this with actual service call
-    client.emit('activePollsList', []);
+    
+    // Get polls from memory store (you'd fetch from database here)
+    const roomPolls = this.activePollsStore.get(data.roomId) || [];
+    
+    // Filter only active polls (not expired)
+    const now = new Date().toISOString();
+    const activePolls = roomPolls.filter(poll => 
+      poll.status === 'active' && poll.expiresAt > now
+    );
+    
+    client.emit('activePollsList', activePolls);
+    console.log(`📊 Sent ${activePolls.length} active polls to client`);
   }
 
   @SubscribeMessage('closePoll')
@@ -226,6 +277,16 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
     if (timer) {
       clearTimeout(timer);
       this.pollTimers.delete(pollId);
+    }
+
+    // Update poll status in memory store
+    const roomPolls = this.activePollsStore.get(roomId) || [];
+    const pollIndex = roomPolls.findIndex(poll => poll.id === pollId);
+    
+    if (pollIndex !== -1) {
+      roomPolls[pollIndex].status = 'closed';
+      roomPolls[pollIndex].closedAt = new Date().toISOString();
+      this.activePollsStore.set(roomId, roomPolls);
     }
 
     // Here you would update the poll status in the database to 'closed'
