@@ -276,15 +276,19 @@ handleUpvoteQuestion(
 ) {
   const userId = data.userId || client.id;
   
-  const result = this.questionStore.upvoteQuestion(data.roomId, data.questionId, userId);
-  if (result.updated) {
-    this.server.to(data.roomId).emit('questionUpdated', result.question);
+  const result = this.questionStore.upvoteQuestion(data.roomId, data.questionId);
+  if (result) {
+    this.server.to(data.roomId).emit('questionUpdated', result);
+    client.emit('upvoteResponse', { 
+      success: true, 
+      message: 'Question upvoted successfully' 
+    });
+  } else {
+    client.emit('upvoteResponse', { 
+      success: false, 
+      message: 'Failed to upvote question' 
+    });
   }
-  
-  client.emit('upvoteResponse', { 
-    success: result.updated, 
-    message: result.message 
-  });
 }
 
   @SubscribeMessage('toggleAnswered')
