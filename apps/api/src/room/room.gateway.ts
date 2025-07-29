@@ -20,9 +20,9 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server: Server;
 
-  // Add this Map to track user message timestamps
+  // Keep rate limiting only for questions (not polls)
   private userLastMessageTime = new Map<string, number>();
-  private readonly RATE_LIMIT_MS = 60000; // 60 seconds
+  private readonly RATE_LIMIT_MS = 60000; // 60 seconds for questions only
 
   // Poll management
   private pollTimers = new Map<string, NodeJS.Timeout>();
@@ -71,7 +71,7 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
     data: { roomId: string; userId: string; question: string },
     @ConnectedSocket() client: Socket,
   ) {
-    // Check rate limit
+    // Keep rate limit only for questions
     const now = Date.now();
     const lastMessageTime = this.userLastMessageTime.get(data.userId);
     
@@ -110,18 +110,7 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
     },
     @ConnectedSocket() client: Socket,
   ) {
-    // Check rate limit (same as questions)
-    const now = Date.now();
-    const lastMessageTime = this.userLastMessageTime.get(data.userId);
-    
-    if (lastMessageTime && (now - lastMessageTime) < this.RATE_LIMIT_MS) {
-      const remainingTime = Math.ceil((this.RATE_LIMIT_MS - (now - lastMessageTime)) / 1000);
-      client.emit('rateLimitError', { 
-        message: `Please wait ${remainingTime} seconds before creating another poll.`,
-        remainingTime 
-      });
-      return;
-    }
+    // Removed rate limiting for polls - users can create polls freely
 
     // Validate poll data
     if (!data.options || data.options.length < 2 || data.options.length > 10) {
@@ -131,9 +120,8 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
       return;
     }
 
-    this.userLastMessageTime.set(data.userId, now);
-
     const pollId = uuidv4();
+    const now = Date.now();
     const newPoll = {
       id: pollId,
       name: data.name,
@@ -190,17 +178,17 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
       return;
     }
 
-    // Check if user already voted (prevent duplicate votes)
-    const existingVoteIndex = poll.options[optionIndex].votes.findIndex(
-      (vote: any) => vote.voterId === data.userId
-    );
+    // Remove existing vote from user if they already voted (allow vote changes)
+    poll.options.forEach((option: any) => {
+      const existingVoteIndex = option.votes.findIndex(
+        (vote: any) => vote.voterId === data.userId
+      );
+      if (existingVoteIndex !== -1) {
+        option.votes.splice(existingVoteIndex, 1);
+      }
+    });
 
-    if (existingVoteIndex !== -1) {
-      client.emit('pollError', { message: 'You have already voted on this poll' });
-      return;
-    }
-
-    // Add the vote
+    // Add the new vote
     const voteData = {
       id: uuidv4(),
       voterId: data.userId,
