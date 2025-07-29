@@ -141,9 +141,26 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
         roomUsers.delete(client.data.userId);
         if (roomUsers.size === 0) {
           this.roomUsers.delete(client.data.roomId);
+          // Clean up room polls when last user leaves
+          this.cleanupRoomPolls(client.data.roomId);
         }
       }
       this.userLastMessageTime.delete(client.data.userId);
+    }
+  }
+
+  private cleanupRoomPolls(roomId: string) {
+    const roomPolls = this.activePollsStore.get(roomId);
+    if (roomPolls) {
+      // Clear all timers for this room
+      roomPolls.forEach((poll) => {
+        const timer = this.pollTimers.get(poll.id);
+        if (timer) {
+          clearTimeout(timer);
+          this.pollTimers.delete(poll.id);
+        }
+      });
+      this.activePollsStore.delete(roomId);
     }
   }
 
@@ -202,12 +219,21 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
       this.logger.log(`${data.role} ${userId} joined room: ${roomId}`);
 
-      // Send current room state to the new user
+      // Send current room state to the new user - INCLUDING EXISTING POLLS
+      const roomPolls = this.activePollsStore.get(roomId);
+      const activePolls = roomPolls ? Array.from(roomPolls.values()).filter(poll => poll.status === 'active') : [];
+
       client.emit('joinRoomSuccess', {
         roomId,
         userId,
         role: data.role,
+        activePolls, // Send existing active polls to new user
       });
+
+      // Also send existing active polls separately for compatibility
+      if (activePolls.length > 0) {
+        client.emit('activePollsList', activePolls);
+      }
 
     } catch (error) {
       this.logger.error(`Error in joinRoom: ${error.message}`);
@@ -345,7 +371,13 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
       // Emit to all users in the room
       this.server.to(data.roomId).emit('newPoll', newPoll);
-      this.logger.log(`Poll created: ${pollId} in room: ${data.roomId}`);
+      
+      // Also emit updated active polls list to ensure all clients are in sync
+      const roomPolls = this.activePollsStore.get(data.roomId);
+      const activePolls = roomPolls ? Array.from(roomPolls.values()).filter(poll => poll.status === 'active') : [];
+      this.server.to(data.roomId).emit('activePollsList', activePolls);
+      
+      this.logger.log(`Poll created: ${pollId} in room: ${data.roomId}. Total active polls: ${activePolls.length}`);
 
     } catch (error) {
       this.logger.error(`Error in createPoll: ${error.message}`);
@@ -381,6 +413,16 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
       if (poll.status !== 'active') {
         client.emit('pollError', { message: 'This poll is no longer active' });
+        return;
+      }
+
+      // Check if poll has expired
+      const now = Date.now();
+      const expiresAt = new Date(poll.expiresAt).getTime();
+      if (now > expiresAt) {
+        // Auto-close expired poll
+        this.closePoll(data.roomId, data.pollId);
+        client.emit('pollError', { message: 'This poll has expired' });
         return;
       }
 
@@ -453,8 +495,19 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
       this.logger.log(`Get active polls request for room: ${data.roomId}`);
       
       const roomPolls = this.activePollsStore.get(data.roomId);
-      const activePolls = roomPolls ? Array.from(roomPolls.values()).filter(poll => poll.status === 'active') : [];
+      const activePolls = roomPolls ? Array.from(roomPolls.values()).filter(poll => {
+        // Also check if poll has expired
+        const now = Date.now();
+        const expiresAt = new Date(poll.expiresAt).getTime();
+        if (poll.status === 'active' && now > expiresAt) {
+          // Auto-close expired poll
+          this.closePoll(data.roomId, poll.id);
+          return false;
+        }
+        return poll.status === 'active';
+      }) : [];
       
+      this.logger.log(`Sending ${activePolls.length} active polls for room ${data.roomId}`);
       client.emit('activePollsList', activePolls);
 
     } catch (error) {
@@ -516,16 +569,21 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
         if (poll) {
           poll.status = 'closed';
           roomPolls.set(pollId, poll);
+
+          // Emit the closure to all room participants
+          this.server.to(roomId).emit('pollClosed', { 
+            pollId,
+            closedAt: new Date().toISOString(),
+            finalResults: poll // Include final results
+          });
+
+          // Also emit updated active polls list after closing
+          const activePolls = Array.from(roomPolls.values()).filter(p => p.status === 'active');
+          this.server.to(roomId).emit('activePollsList', activePolls);
+
+          this.logger.log(`Poll closed: ${pollId} in room: ${roomId}. Remaining active polls: ${activePolls.length}`);
         }
       }
-
-      // Emit the closure to all room participants
-      this.server.to(roomId).emit('pollClosed', { 
-        pollId,
-        closedAt: new Date().toISOString()
-      });
-
-      this.logger.log(`Poll closed: ${pollId} in room: ${roomId}`);
 
     } catch (error) {
       this.logger.error(`Error closing poll ${pollId}: ${error.message}`);
