@@ -294,12 +294,6 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @ConnectedSocket() client: Socket,
   ) {
     try {
-      // Validate room membership
-      if (!this.validateRoomMembership(client, data.roomId)) {
-        client.emit('pollError', { message: 'You are not a member of this room' });
-        return;
-      }
-
       // Check rate limit
       const rateCheck = this.checkRateLimit(data.userId, this.POLL_RATE_LIMIT_MS);
       if (!rateCheck.allowed) {
@@ -384,13 +378,6 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @ConnectedSocket() client: Socket,
   ) {
     try {
-      // Validate room membership
-      if (!this.validateRoomMembership(client, data.roomId)) {
-        client.emit('pollError', { message: 'You are not a member of this room' });
-        return;
-      }
-
-      // Get the poll
       const roomPolls = this.activePollsStore.get(data.roomId);
       if (!roomPolls) {
         client.emit('pollError', { message: 'No active polls in this room' });
@@ -475,13 +462,7 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
         client.emit('pollError', { message: 'Invalid request format' });
         return;
       }
-
-      // Validate room membership
-      if (!this.validateRoomMembership(client, data.roomId)) {
-        client.emit('pollError', { message: 'You are not a member of this room' });
-        return;
-      }
-
+      
       this.logger.log(`Get active polls request for room: ${data.roomId}`);
       
       const roomPolls = this.activePollsStore.get(data.roomId);
@@ -501,12 +482,6 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @ConnectedSocket() client: Socket,
   ) {
     try {
-      // Validate room membership
-      if (!this.validateRoomMembership(client, data.roomId)) {
-        client.emit('pollError', { message: 'You are not a member of this room' });
-        return;
-      }
-
       // Get the poll to check if it exists
       const roomPolls = this.activePollsStore.get(data.roomId);
       const poll = roomPolls?.get(data.pollId);
@@ -567,12 +542,6 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @ConnectedSocket() client: Socket,
   ) {
     try {
-      // Validate room membership
-      if (!this.validateRoomMembership(client, data.roomId)) {
-        client.emit('questionError', { message: 'You are not a member of this room' });
-        return;
-      }
-
       const content = this.sanitizeInput(data.content, 2000);
       if (content.length < 1) {
         client.emit('questionError', { message: 'Reply content cannot be empty' });
@@ -606,12 +575,6 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
       if (!data || typeof data !== 'object' || typeof data.roomId !== 'string') {
         this.logger.warn('Invalid getQuestions payload:', data);
         client.emit('questionError', { message: 'Invalid request format' });
-        return;
-      }
-
-      // Validate room membership
-      if (!this.validateRoomMembership(client, data.roomId)) {
-        client.emit('questionError', { message: 'You are not a member of this room' });
         return;
       }
 
