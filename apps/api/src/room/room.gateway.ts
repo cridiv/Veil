@@ -249,12 +249,6 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @ConnectedSocket() client: Socket,
   ) {
     try {
-      // Validate room membership
-      if (!this.validateRoomMembership(client, data.roomId)) {
-        client.emit('questionError', { message: 'You are not a member of this room' });
-        return;
-      }
-
       // Check rate limit
       const rateCheck = this.checkRateLimit(data.userId, this.QUESTION_RATE_LIMIT_MS);
       if (!rateCheck.allowed) {
