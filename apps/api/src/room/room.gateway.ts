@@ -11,7 +11,7 @@ import { Server, Socket } from 'socket.io';
 import { v4 as uuidv4 } from 'uuid';
 import { QuestionStoreService } from './question-store.service';
 import { Logger, UseGuards, UsePipes, ValidationPipe } from '@nestjs/common';
-import { IsString, IsArray, ArrayMinSize, ArrayMaxSize, IsNotEmpty, IsUUID, IsIn } from 'class-validator';
+import { IsString, IsArray, ArrayMinSize, ArrayMaxSize, IsNotEmpty, IsUUID } from 'class-validator';
 
 // DTOs for validation
 export class JoinRoomDto {
@@ -22,9 +22,6 @@ export class JoinRoomDto {
   @IsString()
   @IsNotEmpty()
   userId: string;
-
-  @IsIn(['moderator', 'user'])
-  role: 'moderator' | 'user';
 }
 
 export class AskQuestionDto {
@@ -118,10 +115,11 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
   // Poll management
   private pollTimers = new Map<string, NodeJS.Timeout>();
   private activePollsStore = new Map<string, Map<string, PollData>>(); // roomId -> pollId -> pollData
-  private readonly POLL_DURATION_MS = 120000; // 2 minutes
+  private readonly POLL_DURATION_MS = 300000; // 5 minutes (changed from 2 minutes)
 
-  // User tracking
+  // User tracking - track which users have voted on which polls
   private roomUsers = new Map<string, Set<string>>(); // roomId -> Set of userIds
+  private pollVotes = new Map<string, Map<string, string>>(); // pollId -> userId -> optionId
 
   constructor(private readonly questionStore: QuestionStoreService) {}
 
@@ -148,11 +146,8 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   private validateRoomMembership(client: Socket, roomId: string): boolean {
-    return client.data.roomId === roomId;
-  }
-
-  private validateModeratorPermission(client: Socket): boolean {
-    return client.data.role === 'moderator';
+    // Check if the client has joined this room
+    return client.data.roomId === roomId && client.rooms.has(roomId);
   }
 
   private checkRateLimit(userId: string, rateLimitMs: number = this.RATE_LIMIT_MS): { allowed: boolean; remainingTime?: number } {
@@ -171,6 +166,28 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
     return input.trim().substring(0, maxLength);
   }
 
+  private hasUserVotedOnPoll(pollId: string, userId: string): boolean {
+    const pollVoteMap = this.pollVotes.get(pollId);
+    return pollVoteMap ? pollVoteMap.has(userId) : false;
+  }
+
+  private recordUserVote(pollId: string, userId: string, optionId: string): void {
+    if (!this.pollVotes.has(pollId)) {
+      this.pollVotes.set(pollId, new Map());
+    }
+    this.pollVotes.get(pollId)!.set(userId, optionId);
+  }
+
+  private removeUserVote(pollId: string, userId: string): string | null {
+    const pollVoteMap = this.pollVotes.get(pollId);
+    if (pollVoteMap && pollVoteMap.has(userId)) {
+      const previousOptionId = pollVoteMap.get(userId)!;
+      pollVoteMap.delete(userId);
+      return previousOptionId;
+    }
+    return null;
+  }
+
   @SubscribeMessage('joinRoom')
   @UsePipes(new ValidationPipe({ transform: true }))
   handleJoinRoom(
@@ -178,14 +195,16 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @ConnectedSocket() client: Socket,
   ) {
     try {
-      this.logger.log(`${data.role} joining room: ${data.roomId}`);
+      this.logger.log(`User joining room: ${data.roomId}`);
 
       // Validate and sanitize
       const roomId = this.sanitizeInput(data.roomId, 100);
       const userId = this.sanitizeInput(data.userId, 100);
 
+      // Join the socket room
       client.join(roomId);
-      client.data.role = data.role;
+      
+      // Store user data in socket
       client.data.userId = userId;
       client.data.roomId = roomId;
 
@@ -195,24 +214,32 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
       }
       this.roomUsers.get(roomId)!.add(userId);
 
-      this.server.to(roomId).emit('userJoined', {
+      // Notify other users in the room
+      client.to(roomId).emit('userJoined', {
         userId: userId,
-        role: data.role,
       });
 
-      this.logger.log(`${data.role} ${userId} joined room: ${roomId}`);
+      this.logger.log(`User ${userId} joined room: ${roomId}`);
 
-      // Send current room state to the new user
+      // Send success response to the joining user
       client.emit('joinRoomSuccess', {
         roomId,
         userId,
-        role: data.role,
       });
+
+      // Send current active polls to the newly joined user
+      this.sendActivePollsToUser(client, roomId);
 
     } catch (error) {
       this.logger.error(`Error in joinRoom: ${error.message}`);
       client.emit('joinRoomError', { message: 'Failed to join room' });
     }
+  }
+
+  private sendActivePollsToUser(client: Socket, roomId: string) {
+    const roomPolls = this.activePollsStore.get(roomId);
+    const activePolls = roomPolls ? Array.from(roomPolls.values()).filter(poll => poll.status === 'active') : [];
+    client.emit('activePollsList', activePolls);
   }
 
   @SubscribeMessage('askQuestion')
@@ -336,6 +363,9 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
       }
       this.activePollsStore.get(data.roomId)!.set(pollId, newPoll);
 
+      // Initialize poll vote tracking
+      this.pollVotes.set(pollId, new Map());
+
       // Set up auto-close timer
       const timer = setTimeout(() => {
         this.closePoll(data.roomId, pollId);
@@ -393,16 +423,22 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
       const option = poll.options[optionIndex];
 
-      // Remove user's previous vote from all options
-      poll.options.forEach(opt => {
-        const userVoteIndex = opt.votes.indexOf(data.userId);
-        if (userVoteIndex > -1) {
-          opt.votes.splice(userVoteIndex, 1);
+      // Check if user has already voted and handle vote change
+      const previousOptionId = this.removeUserVote(data.pollId, data.userId);
+      if (previousOptionId) {
+        // Remove previous vote from the option
+        const previousOption = poll.options.find(opt => opt.id === previousOptionId);
+        if (previousOption) {
+          const userVoteIndex = previousOption.votes.indexOf(data.userId);
+          if (userVoteIndex > -1) {
+            previousOption.votes.splice(userVoteIndex, 1);
+          }
         }
-      });
+      }
 
-      // Add user's vote to the selected option
+      // Add new vote
       option.votes.push(data.userId);
+      this.recordUserVote(data.pollId, data.userId, data.optionId);
 
       // Update the stored poll
       roomPolls.set(data.pollId, poll);
@@ -412,7 +448,8 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
         optionId: data.optionId,
         voterId: data.userId,
         timestamp: new Date().toISOString(),
-        updatedPoll: poll
+        updatedPoll: poll,
+        isVoteChange: !!previousOptionId
       };
 
       // Emit to all users in the room
@@ -421,10 +458,11 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
       // Send confirmation to voter
       client.emit('voteConfirmed', { 
         pollId: data.pollId, 
-        optionId: data.optionId 
+        optionId: data.optionId,
+        isVoteChange: !!previousOptionId
       });
 
-      this.logger.log(`Vote cast: User ${data.userId} voted for option ${data.optionId} in poll ${data.pollId}`);
+      this.logger.log(`Vote cast: User ${data.userId} voted for option ${data.optionId} in poll ${data.pollId}${previousOptionId ? ' (changed vote)' : ''}`);
 
     } catch (error) {
       this.logger.error(`Error in votePoll: ${error.message}`);
@@ -475,7 +513,7 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
         return;
       }
 
-      // Get the poll to check creator or moderator permission
+      // Get the poll to check if it exists
       const roomPolls = this.activePollsStore.get(data.roomId);
       const poll = roomPolls?.get(data.pollId);
 
@@ -484,14 +522,7 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
         return;
       }
 
-      // Only allow moderators or poll creators to manually close polls
-      if (!this.validateModeratorPermission(client) && poll.createdBy !== client.data.userId) {
-        client.emit('pollError', { 
-          message: 'Only moderators or poll creators can manually close polls.' 
-        });
-        return;
-      }
-
+      // Allow any user in the room to close polls (since roles are removed)
       this.closePoll(data.roomId, data.pollId);
 
     } catch (error) {
@@ -519,6 +550,9 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
         }
       }
 
+      // Clean up poll vote tracking
+      this.pollVotes.delete(pollId);
+
       // Emit the closure to all room participants
       this.server.to(roomId).emit('pollClosed', { 
         pollId,
@@ -532,7 +566,7 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
   }
 
-  // Question-related handlers with improved validation
+  // Question-related handlers remain the same but without role validation
   @SubscribeMessage('replyToQuestion')
   handleReplyToQuestion(
     @MessageBody() data: { roomId: string; questionId: string; content: string },
@@ -542,12 +576,6 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
       // Validate room membership
       if (!this.validateRoomMembership(client, data.roomId)) {
         client.emit('questionError', { message: 'You are not a member of this room' });
-        return;
-      }
-
-      // Only moderators can reply to questions
-      if (!this.validateModeratorPermission(client)) {
-        client.emit('questionError', { message: 'Only moderators can reply to questions' });
         return;
       }
 
@@ -643,14 +671,9 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @ConnectedSocket() client: Socket,
   ) {
     try {
-      // Validate room membership and moderator permission
+      // Validate room membership
       if (!this.validateRoomMembership(client, data.roomId)) {
         client.emit('questionError', { message: 'You are not a member of this room' });
-        return;
-      }
-
-      if (!this.validateModeratorPermission(client)) {
-        client.emit('questionError', { message: 'Only moderators can toggle question status' });
         return;
       }
 
@@ -673,14 +696,9 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @ConnectedSocket() client: Socket,
   ) {
     try {
-      // Validate room membership and moderator permission
+      // Validate room membership
       if (!this.validateRoomMembership(client, data.roomId)) {
         client.emit('questionError', { message: 'You are not a member of this room' });
-        return;
-      }
-
-      if (!this.validateModeratorPermission(client)) {
-        client.emit('questionError', { message: 'Only moderators can hide/unhide questions' });
         return;
       }
 
@@ -703,14 +721,9 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @ConnectedSocket() client: Socket,
   ) {
     try {
-      // Validate room membership and moderator permission
+      // Validate room membership
       if (!this.validateRoomMembership(client, data.roomId)) {
         client.emit('questionError', { message: 'You are not a member of this room' });
-        return;
-      }
-
-      if (!this.validateModeratorPermission(client)) {
-        client.emit('questionError', { message: 'Only moderators can delete questions' });
         return;
       }
 
