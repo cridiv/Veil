@@ -35,10 +35,6 @@ export class AskQuestionDto {
 
   @IsString()
   @IsNotEmpty()
-  username: string;
-
-  @IsString()
-  @IsNotEmpty()
   question: string;
 }
 
@@ -246,53 +242,50 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
     client.emit('activePollsList', activePolls);
   }
 
- 
-@SubscribeMessage('askQuestion')
-@UsePipes(new ValidationPipe({ transform: true }))
-handleAskQuestion(
-  @MessageBody() data: AskQuestionDto,
-  @ConnectedSocket() client: Socket,
-) {
-  try {
-    const rateCheck = this.checkRateLimit(data.userId, this.QUESTION_RATE_LIMIT_MS);
-    if (!rateCheck.allowed) {
-      client.emit('rateLimitError', { 
-        message: `Please wait ${rateCheck.remainingTime} seconds before asking another question.`,
-        remainingTime: rateCheck.remainingTime
-      });
-      return;
+  @SubscribeMessage('askQuestion')
+  @UsePipes(new ValidationPipe({ transform: true }))
+  handleAskQuestion(
+    @MessageBody() data: AskQuestionDto,
+    @ConnectedSocket() client: Socket,
+  ) {
+    try {
+      // Check rate limit
+      const rateCheck = this.checkRateLimit(data.userId, this.QUESTION_RATE_LIMIT_MS);
+      if (!rateCheck.allowed) {
+        client.emit('rateLimitError', { 
+          message: `Please wait ${rateCheck.remainingTime} seconds before asking another question.`,
+          remainingTime: rateCheck.remainingTime
+        });
+        return;
+      }
+
+      // Validate and sanitize question
+      const question = this.sanitizeInput(data.question, 1000);
+      if (question.length < 5) {
+        client.emit('questionError', { message: 'Question must be at least 5 characters long' });
+        return;
+      }
+
+      this.userLastMessageTime.set(data.userId, Date.now());
+
+      const newQuestion = {
+        id: uuidv4(),
+        userId: data.userId,
+        roomId: data.roomId,
+        question: question,
+        timestamp: Date.now(),
+      };
+
+      this.questionStore.addQuestion(data.roomId, newQuestion);
+      this.server.to(data.roomId).emit('newQuestion', newQuestion);
+
+      this.logger.log(`Question added by ${data.userId} in room ${data.roomId}`);
+
+    } catch (error) {
+      this.logger.error(`Error in askQuestion: ${error.message}`);
+      client.emit('questionError', { message: 'Failed to submit question' });
     }
-
-    // Validate and sanitize question
-    const question = this.sanitizeInput(data.question, 1000);
-    if (question.length < 5) {
-      client.emit('questionError', { message: 'Question must be at least 5 characters long' });
-      return;
-    }
-
-    const username = this.sanitizeInput(data.username, 100);
-
-    this.userLastMessageTime.set(data.userId, Date.now());
-
-    const newQuestion = {
-      id: uuidv4(),
-      userId: data.userId,
-      username: username, 
-      roomId: data.roomId,
-      question: question,
-      timestamp: Date.now(),
-    };
-
-    this.questionStore.addQuestion(data.roomId, newQuestion);
-    this.server.to(data.roomId).emit('newQuestion', newQuestion);
-
-    this.logger.log(`Question added by ${username} (${data.userId}) in room ${data.roomId}`);
-
-  } catch (error) {
-    this.logger.error(`Error in askQuestion: ${error.message}`);
-    client.emit('questionError', { message: 'Failed to submit question' });
   }
-}
 
   @SubscribeMessage('createPoll')
   @UsePipes(new ValidationPipe({ transform: true }))
